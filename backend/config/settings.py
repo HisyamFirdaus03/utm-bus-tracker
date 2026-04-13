@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "rest_framework",
     "corsheaders",
+    "core",
     "users",
     "buses",
     "routes",
