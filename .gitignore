@@ -7,6 +7,9 @@
 .DS_Store
 Thumbs.db
 
+# Claude
+CLAUDE.md
+
 # Environment
 .env
 .env.*
