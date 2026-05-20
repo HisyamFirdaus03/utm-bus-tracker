@@ -86,37 +86,40 @@ ROUTES = [
     },
 ]
 
-# Buses reference routes by name — resolved to IDs at seed time
+# Buses reference routes by name — resolved to IDs at seed time.
+# Per SDD Decision #3, RTDB is the source of truth for live location/status —
+# Firestore holds metadata only. Buses become "active" when a driver app
+# starts writing to /bus_locations/{busId}.
 BUSES = [
     {
         "bus_name": "Bus A1",
         "plate_number": "JQR 1234",
         "route_name": "Route A",
-        "status": "active",
+        "status": "inactive",
         "capacity": 40,
-        "latitude": 1.5610,
-        "longitude": 103.6450,
-        "speed": 25.0,
+        "latitude": None,
+        "longitude": None,
+        "speed": None,
     },
     {
         "bus_name": "Bus A2",
         "plate_number": "JQR 5678",
         "route_name": "Route A",
-        "status": "active",
+        "status": "inactive",
         "capacity": 40,
-        "latitude": 1.5585,
-        "longitude": 103.6370,
-        "speed": 18.0,
+        "latitude": None,
+        "longitude": None,
+        "speed": None,
     },
     {
         "bus_name": "Bus B1",
         "plate_number": "JQR 9012",
         "route_name": "Route B",
-        "status": "active",
+        "status": "inactive",
         "capacity": 35,
-        "latitude": 1.5550,
-        "longitude": 103.6400,
-        "speed": 30.0,
+        "latitude": None,
+        "longitude": None,
+        "speed": None,
     },
     {
         "bus_name": "Bus C1",
