@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "buses",
     "routes",
     "eta",
+    "feedback",
 ]
 
 MIDDLEWARE = [

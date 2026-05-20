@@ -9,6 +9,8 @@ import '../screens/register/register_screen.dart';
 import '../screens/student/student_home_screen.dart';
 import '../screens/student/plan_route_screen.dart';
 import '../screens/student/route_preview_screen.dart';
+import '../screens/student/submit_feedback_screen.dart';
+import '../screens/student/feedback_history_screen.dart';
 import '../screens/driver/driver_home_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -64,6 +66,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           startStopId: state.uri.queryParameters['start'],
           endStopId: state.uri.queryParameters['end'],
         ),
+      ),
+      GoRoute(
+        path: '/feedback',
+        builder: (context, state) => const FeedbackHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/submit-feedback',
+        builder: (context, state) => const SubmitFeedbackScreen(),
       ),
       GoRoute(
         path: '/driver',

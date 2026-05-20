@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/api/api_bus_repository.dart';
+import '../data/api/api_feedback_repository.dart';
 import '../data/api/api_route_repository.dart';
 import '../data/firebase/firebase_auth_repository.dart';
 import '../data/repositories/repositories.dart';
@@ -23,6 +24,10 @@ final busRepositoryProvider = Provider<BusRepository>((ref) {
 
 final routeRepositoryProvider = Provider<RouteRepository>((ref) {
   return ApiRouteRepository();
+});
+
+final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) {
+  return ApiFeedbackRepository();
 });
 
 // ============================================================
@@ -132,3 +137,11 @@ final allRoutesProvider = FutureProvider<List<BusRoute>>((ref) {
 });
 
 final selectedRouteProvider = StateProvider<String?>((ref) => null);
+
+// ============================================================
+// Feedback data providers
+// ============================================================
+
+final myFeedbackProvider = FutureProvider<List<BusFeedback>>((ref) {
+  return ref.watch(feedbackRepositoryProvider).getMyFeedback();
+});

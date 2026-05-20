@@ -5,4 +5,5 @@ urlpatterns = [
     path("api/buses/", include("buses.urls")),
     path("api/routes/", include("routes.urls")),
     path("api/eta/", include("eta.urls")),
+    path("api/feedbacks/", include("feedback.urls")),
 ]

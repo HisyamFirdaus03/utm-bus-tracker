@@ -64,6 +64,12 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Feedback',
+            icon: const Icon(Icons.feedback_outlined),
+            onPressed: () => context.push('/feedback'),
+          ),
+          IconButton(
+            tooltip: 'Logout',
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authStateProvider.notifier).logout(),
           ),
