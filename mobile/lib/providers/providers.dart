@@ -115,8 +115,12 @@ final activeBusesStreamProvider = StreamProvider<List<Bus>>((ref) {
   return ref.watch(busRepositoryProvider).watchActiveBuses();
 });
 
-final busEtaProvider = FutureProvider.family<int?, String>((ref, busId) {
-  return ref.watch(busRepositoryProvider).getEta(busId);
+typedef EtaArgs = ({String busId, String stopId});
+
+final busEtaProvider = FutureProvider.family<int?, EtaArgs>((ref, args) {
+  return ref
+      .watch(busRepositoryProvider)
+      .getEta(busId: args.busId, stopId: args.stopId);
 });
 
 // ============================================================

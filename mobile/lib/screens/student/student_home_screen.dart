@@ -7,6 +7,7 @@ import '../../core/constants.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/bus_card.dart';
+import '../../widgets/bus_details_sheet.dart';
 import '../../widgets/route_filter_chips.dart';
 
 class StudentHomeScreen extends ConsumerStatefulWidget {
@@ -171,80 +172,23 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
     return visible
         .where((b) => b.latitude != null && b.longitude != null)
         .map((bus) {
-      final routeName = routes
-          .where((r) => r.id == bus.routeId)
-          .map((r) => r.name)
-          .firstOrNull;
+      final route = routes.where((r) => r.id == bus.routeId).firstOrNull;
       return Marker(
         markerId: MarkerId(bus.id),
         position: LatLng(bus.latitude!, bus.longitude!),
         infoWindow: InfoWindow(
           title: bus.plateNumber,
-          snippet: routeName ?? bus.routeId,
+          snippet: route?.name ?? bus.routeId,
         ),
-        onTap: () => _showBusDetails(bus, routeName),
+        onTap: () => _showBusDetails(bus, route),
       );
     }).toSet();
   }
 
-  void _showBusDetails(Bus bus, String? routeName) {
+  void _showBusDetails(Bus bus, BusRoute? route) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.directions_bus,
-                    color: Theme.of(context).colorScheme.primary, size: 32),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(bus.plateNumber,
-                          style: Theme.of(context).textTheme.titleLarge),
-                      if (routeName != null)
-                        Text(routeName,
-                            style: TextStyle(color: Colors.grey[600])),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _detailRow(Icons.speed,
-                '${bus.speed?.toStringAsFixed(1) ?? '—'} km/h'),
-            _detailRow(
-              Icons.access_time,
-              bus.lastUpdated != null
-                  ? 'Updated ${_timeAgo(bus.lastUpdated!)}'
-                  : 'No recent update',
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => BusDetailsSheet(bus: bus, route: route),
     );
-  }
-
-  Widget _detailRow(IconData icon, String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: Colors.grey[600]),
-            const SizedBox(width: 10),
-            Text(text),
-          ],
-        ),
-      );
-
-  String _timeAgo(DateTime dt) {
-    final delta = DateTime.now().difference(dt);
-    if (delta.inSeconds < 60) return '${delta.inSeconds}s ago';
-    if (delta.inMinutes < 60) return '${delta.inMinutes}m ago';
-    return '${delta.inHours}h ago';
   }
 }

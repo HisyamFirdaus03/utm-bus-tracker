@@ -11,6 +11,6 @@ abstract class BusRepository {
     double? speed,
   });
 
-  /// Returns estimated time of arrival in minutes for a given bus.
-  Future<int?> getEta(String busId);
+  /// Returns estimated time of arrival in minutes for a given bus to a given stop.
+  Future<int?> getEta({required String busId, required String stopId});
 }

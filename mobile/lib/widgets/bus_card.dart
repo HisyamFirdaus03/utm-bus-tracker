@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/geo.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 
@@ -16,16 +17,14 @@ class BusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final routeName = routesAsync.whenOrNull(
-      data: (routes) {
-        try {
-          return routes.firstWhere((r) => r.id == bus.routeId).name;
-        } catch (_) {
-          return null;
-        }
-      },
+    final route = routesAsync.whenOrNull(
+      data: (routes) => routes.where((r) => r.id == bus.routeId).firstOrNull,
     );
-    final etaAsync = ref.watch(busEtaProvider(bus.id));
+    final routeName = route?.name;
+    final stop = route != null ? closestStop(bus, route) : null;
+    final etaAsync = stop != null
+        ? ref.watch(busEtaProvider((busId: bus.id, stopId: stop.id)))
+        : const AsyncValue<int?>.data(null);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),

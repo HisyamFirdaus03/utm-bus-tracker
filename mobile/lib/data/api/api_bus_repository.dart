@@ -42,9 +42,19 @@ class ApiBusRepository implements BusRepository {
   }
 
   Bus _mergeLiveLocation(Bus bus, Map<dynamic, dynamic>? snapshot) {
-    if (snapshot == null) return bus;
-    final loc = snapshot[bus.id];
-    if (loc is! Map) return bus;
+    final loc = snapshot?[bus.id];
+    if (loc is! Map) {
+      // No live RTDB pulse — bus is not actively tracked. Per SDD Decision #3,
+      // RTDB is the source of truth for liveness; ignore stale Firestore
+      // lat/lng/speed and surface the bus as inactive.
+      return Bus(
+        id: bus.id,
+        plateNumber: bus.plateNumber,
+        routeId: bus.routeId,
+        status: BusStatus.inactive,
+        capacity: bus.capacity,
+      );
+    }
 
     final ts = loc['timestamp'];
     return bus.copyWith(
@@ -79,11 +89,11 @@ class ApiBusRepository implements BusRepository {
   }
 
   @override
-  Future<int?> getEta(String busId) async {
+  Future<int?> getEta({required String busId, required String stopId}) async {
     try {
       final response = await ApiClient.instance.dio.get(
         '/api/eta/',
-        queryParameters: {'bus_id': busId},
+        queryParameters: {'bus_id': busId, 'stop_id': stopId},
       );
       final data = response.data as Map<String, dynamic>;
       final eta = data['eta_minutes'];

@@ -76,7 +76,10 @@ class RoutePreviewScreen extends ConsumerWidget {
           ),
         ),
         _RouteHeader(route: route, color: routeColor),
-        _BusesOnRouteStrip(buses: busesOnRoute),
+        _BusesOnRouteStrip(
+          buses: busesOnRoute,
+          destinationStop: segment.isNotEmpty ? segment.last : null,
+        ),
         const Divider(height: 1),
         Expanded(
           flex: 3,
@@ -207,8 +210,9 @@ class _RouteHeader extends StatelessWidget {
 
 class _BusesOnRouteStrip extends ConsumerWidget {
   final List<Bus> buses;
+  final BusStop? destinationStop;
 
-  const _BusesOnRouteStrip({required this.buses});
+  const _BusesOnRouteStrip({required this.buses, this.destinationStop});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -222,23 +226,66 @@ class _BusesOnRouteStrip extends ConsumerWidget {
       );
     }
 
+    final primary = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.directions_bus,
-              size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              '${buses.length} active ${buses.length == 1 ? 'bus' : 'buses'}: '
-              '${buses.map((b) => b.plateNumber).join(', ')}',
-              style: const TextStyle(fontSize: 13),
-              overflow: TextOverflow.ellipsis,
-            ),
+          Row(
+            children: [
+              Icon(Icons.directions_bus, size: 18, color: primary),
+              const SizedBox(width: 6),
+              Text(
+                '${buses.length} active ${buses.length == 1 ? 'bus' : 'buses'}'
+                '${destinationStop != null ? ' → ${destinationStop!.name}' : ''}',
+                style: const TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: buses
+                .map((b) => _BusEtaChip(bus: b, stop: destinationStop))
+                .toList(),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BusEtaChip extends ConsumerWidget {
+  final Bus bus;
+  final BusStop? stop;
+
+  const _BusEtaChip({required this.bus, required this.stop});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final etaAsync = stop != null
+        ? ref.watch(busEtaProvider((busId: bus.id, stopId: stop!.id)))
+        : const AsyncValue<int?>.data(null);
+
+    final label = etaAsync.when(
+      data: (eta) => eta != null ? '$eta min' : '—',
+      loading: () => '…',
+      error: (_, _) => '—',
+    );
+
+    return Chip(
+      label: Text(
+        '${bus.plateNumber}  •  $label',
+        style: TextStyle(fontSize: 12, color: theme.colorScheme.primary),
+      ),
+      backgroundColor: theme.colorScheme.primary.withAlpha(20),
+      side: BorderSide(color: theme.colorScheme.primary.withAlpha(60)),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }

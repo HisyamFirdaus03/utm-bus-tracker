@@ -87,11 +87,11 @@ class MockBusRepository implements BusRepository {
   }
 
   @override
-  Future<int?> getEta(String busId) async {
+  Future<int?> getEta({required String busId, required String stopId}) async {
     final bus = _buses.where((b) => b.id == busId).firstOrNull;
     if (bus == null || bus.status != BusStatus.active) return null;
-    // Mock ETA: deterministic per bus, 3–17 minutes
-    final hash = busId.hashCode.abs();
+    // Mock ETA: deterministic per (bus, stop) pair, 3–17 minutes
+    final hash = (busId + stopId).hashCode.abs();
     return 3 + (hash % 15);
   }
 
