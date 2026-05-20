@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/constants.dart';
@@ -66,6 +67,11 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
             onPressed: () => ref.read(authStateProvider.notifier).logout(),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/plan-route'),
+        icon: const Icon(Icons.alt_route),
+        label: const Text('Plan Route'),
       ),
       body: Column(
         children: [

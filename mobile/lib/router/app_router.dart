@@ -7,6 +7,8 @@ import '../providers/providers.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/register/register_screen.dart';
 import '../screens/student/student_home_screen.dart';
+import '../screens/student/plan_route_screen.dart';
+import '../screens/student/route_preview_screen.dart';
 import '../screens/driver/driver_home_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -50,6 +52,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/student',
         builder: (context, state) => const StudentHomeScreen(),
+      ),
+      GoRoute(
+        path: '/plan-route',
+        builder: (context, state) => const PlanRouteScreen(),
+      ),
+      GoRoute(
+        path: '/route-preview/:routeId',
+        builder: (context, state) => RoutePreviewScreen(
+          routeId: state.pathParameters['routeId']!,
+          startStopId: state.uri.queryParameters['start'],
+          endStopId: state.uri.queryParameters['end'],
+        ),
       ),
       GoRoute(
         path: '/driver',
