@@ -56,8 +56,8 @@ class RoutePreviewScreen extends ConsumerWidget {
 
     return Column(
       children: [
-        SizedBox(
-          height: 280,
+        Expanded(
+          flex: 2,
           child: GoogleMap(
             initialCameraPosition: _initialCamera(segment),
             markers: _buildMarkers(segment, busesOnRoute),
@@ -79,6 +79,7 @@ class RoutePreviewScreen extends ConsumerWidget {
         _BusesOnRouteStrip(buses: busesOnRoute),
         const Divider(height: 1),
         Expanded(
+          flex: 3,
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: segment.length,
