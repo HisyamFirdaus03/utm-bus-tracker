@@ -1,26 +1,28 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/mock/mock_auth_repository.dart';
-import '../data/mock/mock_bus_repository.dart';
-import '../data/mock/mock_route_repository.dart';
+import '../data/api/api_bus_repository.dart';
+import '../data/api/api_route_repository.dart';
+import '../data/firebase/firebase_auth_repository.dart';
 import '../data/repositories/repositories.dart';
 import '../models/models.dart';
 
 // ============================================================
 // Repository providers
-// To swap mock → Firebase: replace the mock constructors below
 // ============================================================
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return MockAuthRepository();
+  return FirebaseAuthRepository();
 });
 
 final busRepositoryProvider = Provider<BusRepository>((ref) {
-  return MockBusRepository();
+  return ApiBusRepository();
 });
 
 final routeRepositoryProvider = Provider<RouteRepository>((ref) {
-  return MockRouteRepository();
+  return ApiRouteRepository();
 });
 
 // ============================================================
@@ -34,8 +36,24 @@ final authStateProvider =
 
 class AuthNotifier extends StateNotifier<AsyncValue<AppUser?>> {
   final AuthRepository _repo;
+  StreamSubscription<User?>? _sub;
 
-  AuthNotifier(this._repo) : super(const AsyncValue.data(null));
+  AuthNotifier(this._repo) : super(const AsyncValue.loading()) {
+    _sub = FirebaseAuth.instance.authStateChanges().listen(_onAuthChange);
+  }
+
+  Future<void> _onAuthChange(User? firebaseUser) async {
+    if (firebaseUser == null) {
+      state = const AsyncValue.data(null);
+      return;
+    }
+    try {
+      final user = await _repo.getCurrentUser();
+      state = AsyncValue.data(user);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 
   Future<bool> login(String email, String password) async {
     state = const AsyncValue.loading();
@@ -49,9 +67,39 @@ class AuthNotifier extends StateNotifier<AsyncValue<AppUser?>> {
     }
   }
 
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+    String? matricNumber,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await _repo.register(
+        name: name,
+        email: email,
+        password: password,
+        role: role,
+        matricNumber: matricNumber,
+      );
+      state = AsyncValue.data(user);
+      return user != null;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await _repo.logout();
     state = const AsyncValue.data(null);
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 }
 

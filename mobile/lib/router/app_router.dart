@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../screens/login/login_screen.dart';
+import '../screens/register/register_screen.dart';
 import '../screens/student/student_home_screen.dart';
 import '../screens/driver/driver_home_screen.dart';
 
@@ -15,15 +16,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/login',
     redirect: (context, state) {
       final user = authState.valueOrNull;
-      final isOnLogin = state.matchedLocation == '/login';
+      final loc = state.matchedLocation;
+      final isOnAuthPage = loc == '/login' || loc == '/register';
 
-      // Not logged in → force login
+      // Not logged in → force auth pages only
       if (user == null) {
-        return isOnLogin ? null : '/login';
+        return isOnAuthPage ? null : '/login';
       }
 
-      // Logged in but on login page → redirect to role-based home
-      if (isOnLogin) {
+      // Logged in but on auth page → redirect to role-based home
+      if (isOnAuthPage) {
         switch (user.role) {
           case UserRole.student:
             return '/student';
@@ -40,6 +42,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: '/student',

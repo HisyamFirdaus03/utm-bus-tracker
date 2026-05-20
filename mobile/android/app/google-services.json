@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "695694961171",
+    "firebase_url": "https://utm-bustracker-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "utm-bustracker",
+    "storage_bucket": "utm-bustracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:695694961171:android:6eccd7b20df184d77dade6",
+        "android_client_info": {
+          "package_name": "com.utmbustrack.utm_bus_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoxxdCqhsIDwpW6SLKUx9bUXZofP0gcbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

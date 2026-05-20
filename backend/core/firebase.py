@@ -6,7 +6,7 @@ All Firestore access in the project goes through `get_db()`.
 """
 
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth, db as rtdb
 from django.conf import settings
 
 _app = None
@@ -23,15 +23,23 @@ def _init_firebase():
         # Falls back to GOOGLE_APPLICATION_CREDENTIALS env var
         cred = credentials.ApplicationDefault()
 
-    _app = firebase_admin.initialize_app(cred, {
-        "projectId": settings.FIREBASE_PROJECT_ID,
-    })
+    options = {"projectId": settings.FIREBASE_PROJECT_ID}
+    if settings.FIREBASE_DATABASE_URL:
+        options["databaseURL"] = settings.FIREBASE_DATABASE_URL
+
+    _app = firebase_admin.initialize_app(cred, options)
 
 
 def get_db():
     """Return the Firestore client (initialises Firebase on first call)."""
     _init_firebase()
     return firestore.client()
+
+
+def get_rtdb():
+    """Return the Realtime Database module (initialises Firebase on first call)."""
+    _init_firebase()
+    return rtdb
 
 
 def verify_id_token(id_token: str) -> dict:

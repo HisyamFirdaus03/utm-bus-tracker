@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "bus_locations": {
+      ".read": "auth != null",
+      "$busId": {
+        ".write": "auth != null && auth.token.role == 'driver'",
+        ".validate": "newData.hasChildren(['latitude', 'longitude', 'timestamp'])",
+        "latitude": { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+        "longitude": { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+        "speed": { ".validate": "newData.isNumber()" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "driver_uid": { ".validate": "newData.isString()" },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

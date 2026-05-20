@@ -17,7 +17,8 @@ def register_user(data: dict) -> dict:
 
     Returns the full user document dict (including `id`).
     """
-    # 1. Create Firebase Auth account
+    role = data.get("role", "student")
+
     firebase_user = firebase_auth.create_user(
         email=data["email"],
         password=data["password"],
@@ -25,23 +26,23 @@ def register_user(data: dict) -> dict:
     )
     uid = firebase_user.uid
 
-    # 2. Build Firestore profile (never store raw password)
+    # Custom claim lets Firebase RTDB rules gate driver writes without a Firestore lookup
+    firebase_auth.set_custom_user_claims(uid, {"role": role})
+
     profile = {
         "name": data["name"],
         "email": data["email"],
-        "role": data.get("role", "student"),
+        "role": role,
     }
 
-    # Role-specific fields
-    if profile["role"] == "student":
+    if role == "student":
         profile["matric_number"] = data.get("matric_number")
         profile["faculty"] = data.get("faculty")
         profile["year"] = data.get("year")
-    elif profile["role"] == "driver":
+    elif role == "driver":
         profile["phone_no"] = data.get("phone_no")
         profile["assigned_bus_id"] = None
 
-    # 3. Save to Firestore
     get_db().collection("users").document(uid).set(profile)
 
     profile["id"] = uid

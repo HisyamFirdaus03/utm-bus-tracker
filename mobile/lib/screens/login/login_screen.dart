@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/providers.dart';
 
@@ -11,8 +12,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'student@utm.my');
-  final _passwordController = TextEditingController(text: 'password');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _error;
 
@@ -24,21 +25,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Enter email and password');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
-    final success = await ref.read(authStateProvider.notifier).login(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
+    final notifier = ref.read(authStateProvider.notifier);
+    final success = await notifier.login(email, password);
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (!success) {
-        setState(() => _error = 'Invalid email or password');
-      }
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!success) {
+      final state = ref.read(authStateProvider);
+      final errMsg = state.hasError
+          ? state.error.toString()
+          : 'Invalid email or password';
+      setState(() => _error = errMsg);
     }
   }
 
@@ -52,7 +63,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo / Title
                 Icon(
                   Icons.directions_bus_rounded,
                   size: 80,
@@ -75,39 +85,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
-                // Email field
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email_outlined),
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Password field
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: const InputDecoration(
                     labelText: 'Password',
                     prefixIcon: Icon(Icons.lock_outlined),
+                    border: OutlineInputBorder(),
                   ),
+                  onSubmitted: (_) => _isLoading ? null : _login(),
                 ),
-                const SizedBox(height: 8),
 
-                // Error message
                 if (_error != null) ...[
-                  const SizedBox(height: 8),
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  const SizedBox(height: 12),
+                  Text(_error!,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center),
                 ],
 
                 const SizedBox(height: 24),
 
-                // Login button
                 SizedBox(
                   width: double.infinity,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _login,
                     child: _isLoading
@@ -123,9 +136,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
-                // Quick login hints
+                TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => context.push('/register'),
+                  child: const Text('New student? Create an account'),
+                ),
+
+                const SizedBox(height: 16),
+
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -136,13 +157,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Demo accounts:',
+                        'Test driver account',
                         style: Theme.of(context).textTheme.labelLarge,
                       ),
                       const SizedBox(height: 8),
-                      _quickLoginButton('Student', 'student@utm.my'),
-                      _quickLoginButton('Driver', 'driver@utm.my'),
-                      _quickLoginButton('Admin', 'admin@utm.my'),
+                      _quickFillRow('driver1@utm.my', 'driver123'),
                     ],
                   ),
                 ),
@@ -154,11 +173,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _quickLoginButton(String label, String email) {
+  Widget _quickFillRow(String email, String password) {
     return InkWell(
       onTap: () {
         _emailController.text = email;
-        _passwordController.text = 'password';
+        _passwordController.text = password;
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -166,10 +185,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           children: [
             const Icon(Icons.person_outline, size: 16, color: Colors.grey),
             const SizedBox(width: 8),
-            Text(
-              '$label: $email',
-              style: TextStyle(color: Colors.grey[700], fontSize: 13),
+            Expanded(
+              child: Text(
+                '$email / $password',
+                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+              ),
             ),
+            Icon(Icons.touch_app, size: 16, color: Colors.grey[500]),
           ],
         ),
       ),

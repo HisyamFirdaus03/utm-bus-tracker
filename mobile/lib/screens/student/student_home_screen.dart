@@ -1,18 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../core/constants.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../widgets/bus_card.dart';
 import '../../widgets/route_filter_chips.dart';
 
-class StudentHomeScreen extends ConsumerWidget {
+class StudentHomeScreen extends ConsumerStatefulWidget {
   const StudentHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
+  GoogleMapController? _mapController;
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
-    final busesAsync = ref.watch(allBusesProvider);
+    final activeBusesAsync = ref.watch(activeBusesStreamProvider);
     final routesAsync = ref.watch(allRoutesProvider);
     final selectedRoute = ref.watch(selectedRouteProvider);
 
@@ -54,7 +69,6 @@ class StudentHomeScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Greeting
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -64,7 +78,6 @@ class StudentHomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // Route filter chips
           routesAsync.when(
             data: (routes) => RouteFilterChips(
               routes: routes,
@@ -73,68 +86,62 @@ class StudentHomeScreen extends ConsumerWidget {
                 ref.read(selectedRouteProvider.notifier).state = routeId;
               },
             ),
-            loading: () =>
-                const Padding(padding: EdgeInsets.all(16), child: LinearProgressIndicator()),
+            loading: () => const Padding(
+              padding: EdgeInsets.all(16),
+              child: LinearProgressIndicator(),
+            ),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(16),
               child: Text('Error loading routes: $e'),
             ),
           ),
 
-          // Map placeholder
           Expanded(
             flex: 3,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.map_outlined, size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Google Maps will appear here',
-                      style: TextStyle(color: Colors.grey[500]),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Requires Google Maps API key',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                    ),
-                  ],
+              child: GoogleMap(
+                initialCameraPosition: const CameraPosition(
+                  target: AppConstants.utmCampusCenter,
+                  zoom: AppConstants.defaultMapZoom,
+                ),
+                onMapCreated: (controller) => _mapController = controller,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                markers: _buildMarkers(
+                  activeBusesAsync.valueOrNull ?? const [],
+                  routesAsync.valueOrNull ?? const [],
+                  selectedRoute,
                 ),
               ),
             ),
           ),
 
-          // Active buses list
           Expanded(
             flex: 2,
-            child: busesAsync.when(
+            child: activeBusesAsync.when(
               data: (buses) {
                 final filtered = selectedRoute != null
                     ? buses.where((b) => b.routeId == selectedRoute).toList()
                     : buses;
-                final activeBuses =
-                    filtered.where((b) => b.status == BusStatus.active).toList();
 
-                if (activeBuses.isEmpty) {
-                  return const Center(child: Text('No active buses on this route'));
+                if (filtered.isEmpty) {
+                  return const Center(
+                    child: Text('No active buses on this route'),
+                  );
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: activeBuses.length,
-                  itemBuilder: (context, index) {
-                    return BusCard(
-                      bus: activeBuses[index],
-                      routesAsync: routesAsync,
-                    );
-                  },
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) => BusCard(
+                    bus: filtered[index],
+                    routesAsync: routesAsync,
+                  ),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -144,5 +151,94 @@ class StudentHomeScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Set<Marker> _buildMarkers(
+    List<Bus> buses,
+    List<BusRoute> routes,
+    String? selectedRouteId,
+  ) {
+    final visible = selectedRouteId != null
+        ? buses.where((b) => b.routeId == selectedRouteId)
+        : buses;
+
+    return visible
+        .where((b) => b.latitude != null && b.longitude != null)
+        .map((bus) {
+      final routeName = routes
+          .where((r) => r.id == bus.routeId)
+          .map((r) => r.name)
+          .firstOrNull;
+      return Marker(
+        markerId: MarkerId(bus.id),
+        position: LatLng(bus.latitude!, bus.longitude!),
+        infoWindow: InfoWindow(
+          title: bus.plateNumber,
+          snippet: routeName ?? bus.routeId,
+        ),
+        onTap: () => _showBusDetails(bus, routeName),
+      );
+    }).toSet();
+  }
+
+  void _showBusDetails(Bus bus, String? routeName) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.directions_bus,
+                    color: Theme.of(context).colorScheme.primary, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(bus.plateNumber,
+                          style: Theme.of(context).textTheme.titleLarge),
+                      if (routeName != null)
+                        Text(routeName,
+                            style: TextStyle(color: Colors.grey[600])),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _detailRow(Icons.speed,
+                '${bus.speed?.toStringAsFixed(1) ?? '—'} km/h'),
+            _detailRow(
+              Icons.access_time,
+              bus.lastUpdated != null
+                  ? 'Updated ${_timeAgo(bus.lastUpdated!)}'
+                  : 'No recent update',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: Colors.grey[600]),
+            const SizedBox(width: 10),
+            Text(text),
+          ],
+        ),
+      );
+
+  String _timeAgo(DateTime dt) {
+    final delta = DateTime.now().difference(dt);
+    if (delta.inSeconds < 60) return '${delta.inSeconds}s ago';
+    if (delta.inMinutes < 60) return '${delta.inMinutes}m ago';
+    return '${delta.inHours}h ago';
   }
 }
