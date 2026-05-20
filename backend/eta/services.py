@@ -14,7 +14,25 @@ import requests
 from django.conf import settings
 
 from buses.services import get_bus
+from core.firebase import get_rtdb
 from routes.services import get_stop
+
+
+def _get_live_location(bus_id: str) -> Optional[dict]:
+    """Read the bus's live lat/lng from RTDB (hot path per SDD Decision #3).
+
+    Returns {"latitude": float, "longitude": float} or None when there's no
+    live entry. Firestore's lat/lng on the bus doc is metadata-only and may
+    be stale or null — RTDB is the source of truth.
+    """
+    snap = get_rtdb().reference(f"/bus_locations/{bus_id}").get()
+    if not isinstance(snap, dict):
+        return None
+    lat = snap.get("latitude")
+    lng = snap.get("longitude")
+    if lat is None or lng is None:
+        return None
+    return {"latitude": float(lat), "longitude": float(lng)}
 
 
 def estimate_eta(bus_id: str, stop_id: str) -> Optional[dict]:
@@ -24,15 +42,19 @@ def estimate_eta(bus_id: str, stop_id: str) -> Optional[dict]:
     Returns {"eta_minutes": int, "distance_meters": int} or None if inputs
     are invalid.
     """
-    bus = get_bus(bus_id)
-    if not bus or not bus.get("latitude") or not bus.get("longitude"):
+    if not get_bus(bus_id):
+        return None
+
+    live = _get_live_location(bus_id)
+    if live is None:
         return None
 
     stop = get_stop(stop_id)
     if not stop:
         return None
 
-    origin = f"{bus['latitude']},{bus['longitude']}"
+    bus = live  # for fallback signature compatibility
+    origin = f"{live['latitude']},{live['longitude']}"
     destination = f"{stop['latitude']},{stop['longitude']}"
 
     api_key = settings.GOOGLE_MAPS_API_KEY

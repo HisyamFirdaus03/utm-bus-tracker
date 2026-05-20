@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/notifications.dart';
 import 'firebase_options.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
@@ -15,6 +16,7 @@ Future<void> main() async {
     );
   }
   FirebaseDatabase.instance.setPersistenceEnabled(false);
+  await NotificationService.instance.init();
 
   runApp(const ProviderScope(child: UTMBusTrackerApp()));
 }

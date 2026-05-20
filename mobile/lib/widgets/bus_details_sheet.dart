@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/geo.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../providers/watchlist_provider.dart';
 
 class BusDetailsSheet extends ConsumerStatefulWidget {
   final Bus bus;
@@ -150,6 +151,11 @@ class _EtaSection extends ConsumerWidget {
         ? ref.watch(busEtaProvider((busId: bus.id, stopId: selectedStopId!)))
         : const AsyncValue<int?>.data(null);
 
+    final watching = selectedStopId != null &&
+        ref
+            .watch(watchlistProvider)
+            .contains(WatchEntry(busId: bus.id, stopId: selectedStopId!));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -173,25 +179,46 @@ class _EtaSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 8),
-        etaAsync.when(
-          data: (eta) => Text(
-            eta != null ? '$eta min' : '—',
-            style: theme.textTheme.headlineMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: etaAsync.when(
+                data: (eta) => Text(
+                  eta != null ? '$eta min' : '—',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                loading: () => const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (_, _) => Text(
+                  '—',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
             ),
-          ),
-          loading: () => const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          error: (_, _) => Text(
-            '—',
-            style: theme.textTheme.headlineMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
+            if (selectedStopId != null)
+              TextButton.icon(
+                onPressed: () => ref
+                    .read(watchlistProvider.notifier)
+                    .toggle(WatchEntry(
+                        busId: bus.id, stopId: selectedStopId!)),
+                icon: Icon(
+                  watching
+                      ? Icons.notifications_active
+                      : Icons.notifications_none,
+                  size: 18,
+                ),
+                label: Text(watching ? 'Watching' : 'Notify me'),
+              ),
+          ],
         ),
       ],
     );

@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/constants.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../providers/watchlist_provider.dart';
 import '../../widgets/bus_card.dart';
 import '../../widgets/bus_details_sheet.dart';
 import '../../widgets/route_filter_chips.dart';
@@ -32,6 +33,9 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
     final activeBusesAsync = ref.watch(activeBusesStreamProvider);
     final routesAsync = ref.watch(allRoutesProvider);
     final selectedRoute = ref.watch(selectedRouteProvider);
+    final watchlistCount = ref.watch(watchlistProvider).length;
+    // Eagerly construct the monitor — spins up the polling timer.
+    ref.watch(watchMonitorProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -63,6 +67,15 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Watchlist',
+            icon: Badge(
+              isLabelVisible: watchlistCount > 0,
+              label: Text('$watchlistCount'),
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () => context.push('/watchlist'),
+          ),
           IconButton(
             tooltip: 'Feedback',
             icon: const Icon(Icons.feedback_outlined),
