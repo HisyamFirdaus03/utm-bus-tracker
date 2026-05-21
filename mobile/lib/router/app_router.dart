@@ -12,6 +12,7 @@ import '../screens/student/route_preview_screen.dart';
 import '../screens/student/submit_feedback_screen.dart';
 import '../screens/student/feedback_history_screen.dart';
 import '../screens/student/watchlist_screen.dart';
+import '../screens/student/bus_schedule_screen.dart';
 import '../screens/driver/driver_home_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -79,6 +80,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/watchlist',
         builder: (context, state) => const WatchlistScreen(),
+      ),
+      GoRoute(
+        path: '/schedule',
+        builder: (context, state) => const BusScheduleScreen(),
       ),
       GoRoute(
         path: '/driver',

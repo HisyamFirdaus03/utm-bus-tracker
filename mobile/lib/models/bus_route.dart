@@ -32,6 +32,30 @@ class BusStop {
       };
 }
 
+class RouteSchedule {
+  final String departureTime; // "HH:mm" first service of the day
+  final String arrivalTime;   // "HH:mm" last service of the day
+  final int frequencyMinutes; // minutes between buses
+
+  const RouteSchedule({
+    required this.departureTime,
+    required this.arrivalTime,
+    required this.frequencyMinutes,
+  });
+
+  factory RouteSchedule.fromJson(Map<String, dynamic> json) => RouteSchedule(
+        departureTime: json['departure_time'] as String,
+        arrivalTime: json['arrival_time'] as String,
+        frequencyMinutes: (json['frequencies'] as num).toInt(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'departure_time': departureTime,
+        'arrival_time': arrivalTime,
+        'frequencies': frequencyMinutes,
+      };
+}
+
 class BusRoute {
   final String id;
   final String name;
@@ -39,6 +63,7 @@ class BusRoute {
   final String color; // hex color for map polyline
   final List<BusStop> stops;
   final bool isActive;
+  final RouteSchedule? schedule;
 
   const BusRoute({
     required this.id,
@@ -47,6 +72,7 @@ class BusRoute {
     required this.color,
     required this.stops,
     this.isActive = true,
+    this.schedule,
   });
 
   factory BusRoute.fromJson(Map<String, dynamic> json) {
@@ -59,6 +85,9 @@ class BusRoute {
           .map((s) => BusStop.fromJson(s as Map<String, dynamic>))
           .toList(),
       isActive: json['is_active'] as bool? ?? true,
+      schedule: json['schedule'] is Map<String, dynamic>
+          ? RouteSchedule.fromJson(json['schedule'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -69,5 +98,6 @@ class BusRoute {
         'color': color,
         'stops': stops.map((s) => s.toJson()).toList(),
         'is_active': isActive,
+        'schedule': schedule?.toJson(),
       };
 }

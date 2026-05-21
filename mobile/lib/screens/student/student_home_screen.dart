@@ -68,6 +68,11 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Schedule',
+            icon: const Icon(Icons.schedule_outlined),
+            onPressed: () => context.push('/schedule'),
+          ),
+          IconButton(
             tooltip: 'Watchlist',
             icon: Badge(
               isLabelVisible: watchlistCount > 0,
@@ -76,15 +81,34 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
             ),
             onPressed: () => context.push('/watchlist'),
           ),
-          IconButton(
-            tooltip: 'Feedback',
-            icon: const Icon(Icons.feedback_outlined),
-            onPressed: () => context.push('/feedback'),
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authStateProvider.notifier).logout(),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            onSelected: (value) {
+              switch (value) {
+                case 'feedback':
+                  context.push('/feedback');
+                case 'logout':
+                  ref.read(authStateProvider.notifier).logout();
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'feedback',
+                child: ListTile(
+                  leading: Icon(Icons.feedback_outlined),
+                  title: Text('Feedback'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'logout',
+                child: ListTile(
+                  leading: Icon(Icons.logout),
+                  title: Text('Logout'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),
