@@ -35,6 +35,10 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
     Header format: Authorization: Bearer <id_token>
     """
 
+    def authenticate_header(self, request):
+        # Without this, DRF reports auth failures as 403 instead of 401.
+        return 'Bearer realm="api"'
+
     def authenticate(self, request):
         auth_header = request.META.get("HTTP_AUTHORIZATION", "")
         if not auth_header.startswith("Bearer "):
@@ -44,8 +48,8 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
 
         try:
             decoded = verify_id_token(token)
-        except Exception:
-            raise exceptions.AuthenticationFailed("Invalid or expired Firebase token.")
+        except Exception as e:
+            raise exceptions.AuthenticationFailed(f"Invalid or expired Firebase token: {e}")
 
         uid = decoded["uid"]
 
