@@ -36,3 +36,16 @@ export type Bus = {
   speed?: number | null;
   last_updated?: string | null;
 };
+
+export type FeedbackStatus = 'new' | 'in_progress' | 'resolved';
+
+export type Feedback = {
+  id: string;
+  student_id: string;
+  bus_id: string;
+  description: string;
+  screenshot_url?: string | null;
+  status: FeedbackStatus;
+  admin_response?: string | null;
+  timestamp: string;
+};

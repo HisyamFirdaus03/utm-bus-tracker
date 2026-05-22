@@ -21,3 +21,11 @@ class FeedbackSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=STATUS_CHOICES, default="new")
     admin_response = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     timestamp = serializers.CharField()
+
+
+class FeedbackRespondSerializer(serializers.Serializer):
+    """Payload accepted on PATCH /api/feedbacks/<id>/respond/."""
+    admin_response = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True, max_length=2000
+    )
+    status = serializers.ChoiceField(choices=STATUS_CHOICES, required=False)

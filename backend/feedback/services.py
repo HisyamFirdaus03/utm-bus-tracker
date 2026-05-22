@@ -58,3 +58,37 @@ def get_feedback(feedback_id: str) -> Optional[dict]:
     data = doc.to_dict()
     data["id"] = feedback_id
     return data
+
+
+def list_all_feedback() -> List[dict]:
+    """Return all feedback rows across students, newest first (admin use)."""
+    docs = get_db().collection(COLLECTION).stream()
+    result = []
+    for doc in docs:
+        data = doc.to_dict()
+        data["id"] = doc.id
+        result.append(data)
+    result.sort(key=lambda f: f.get("timestamp", ""), reverse=True)
+    return result
+
+
+def respond_to_feedback(
+    feedback_id: str,
+    admin_response: Optional[str],
+    status: Optional[str],
+) -> Optional[dict]:
+    """Patch admin_response and/or status on a feedback document."""
+    ref = get_db().collection(COLLECTION).document(feedback_id)
+    snap = ref.get()
+    if not snap.exists:
+        return None
+    patch = {}
+    if admin_response is not None:
+        patch["admin_response"] = admin_response
+    if status is not None:
+        patch["status"] = status
+    if patch:
+        ref.update(patch)
+    data = ref.get().to_dict()
+    data["id"] = feedback_id
+    return data

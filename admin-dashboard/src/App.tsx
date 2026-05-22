@@ -5,6 +5,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AdminLayout } from './layout/AdminLayout';
 import { BusesPage } from './pages/BusesPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { FeedbackPage } from './pages/FeedbackPage';
 import { LoginPage } from './pages/LoginPage';
 import { RoutesPage } from './pages/RoutesPage';
 import { SchedulesPage } from './pages/SchedulesPage';
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="routes" element={<RoutesPage />} />
             <Route path="buses" element={<BusesPage />} />
             <Route path="schedules" element={<SchedulesPage />} />
+            <Route path="feedback" element={<FeedbackPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

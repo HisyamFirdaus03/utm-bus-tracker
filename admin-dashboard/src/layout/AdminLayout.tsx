@@ -15,6 +15,7 @@ import {
   DirectionsBus as BusIcon,
   Schedule as ScheduleIcon,
   Dashboard as DashboardIcon,
+  Feedback as FeedbackIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -28,6 +29,7 @@ const NAV = [
   { label: 'Routes', to: '/routes', icon: <RouteIcon /> },
   { label: 'Buses', to: '/buses', icon: <BusIcon /> },
   { label: 'Schedules', to: '/schedules', icon: <ScheduleIcon /> },
+  { label: 'Feedback', to: '/feedback', icon: <FeedbackIcon /> },
 ];
 
 export function AdminLayout() {
