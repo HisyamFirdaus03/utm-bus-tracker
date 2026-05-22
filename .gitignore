@@ -9,6 +9,8 @@ Thumbs.db
 
 # Claude
 CLAUDE.md
+/redesign-preview
+HANDOFF.md
 
 # Environment
 .env
