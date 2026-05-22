@@ -32,13 +32,18 @@ class ApiBusRepository implements BusRepository {
   Stream<List<Bus>> watchActiveBuses() async* {
     final metadata = await getAllBuses();
 
-    yield* _rtdbRef.onValue.map((event) {
-      final snapshot = event.snapshot.value as Map<dynamic, dynamic>?;
-      return metadata
-          .map((bus) => _mergeLiveLocation(bus, snapshot))
-          .where((bus) => bus.status == BusStatus.active)
-          .toList();
-    });
+    yield* _rtdbRef.onValue
+        .map((event) {
+          final snapshot = event.snapshot.value as Map<dynamic, dynamic>?;
+          return metadata
+              .map((bus) => _mergeLiveLocation(bus, snapshot))
+              .where((bus) => bus.status == BusStatus.active)
+              .toList();
+        })
+        // Swallow permission-denied that briefly fires during sign-out before
+        // the auth-aware provider tears this stream down. The provider rebuilds
+        // on the next auth state so the data path recovers automatically.
+        .handleError((Object _) {});
   }
 
   Bus _mergeLiveLocation(Bus bus, Map<dynamic, dynamic>? snapshot) {

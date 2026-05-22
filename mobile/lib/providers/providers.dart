@@ -117,6 +117,13 @@ final allBusesProvider = FutureProvider<List<Bus>>((ref) {
 });
 
 final activeBusesStreamProvider = StreamProvider<List<Bus>>((ref) {
+  // Re-subscribe whenever auth changes: an old RTDB listener held across a
+  // sign-out raises `permission-denied`, and Riverpod would otherwise pin
+  // that error until full restart. Signed-out state yields an empty list.
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) {
+    return Stream.value(const <Bus>[]);
+  }
   return ref.watch(busRepositoryProvider).watchActiveBuses();
 });
 
