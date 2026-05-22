@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "routes",
     "eta",
     "feedback",
+    "analytics",
 ]
 
 MIDDLEWARE = [

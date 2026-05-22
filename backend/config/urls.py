@@ -6,4 +6,5 @@ urlpatterns = [
     path("api/routes/", include("routes.urls")),
     path("api/eta/", include("eta.urls")),
     path("api/feedbacks/", include("feedback.urls")),
+    path("api/analytics/", include("analytics.urls")),
 ]

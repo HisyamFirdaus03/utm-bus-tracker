@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AdminLayout } from './layout/AdminLayout';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 import { BusesPage } from './pages/BusesPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FeedbackPage } from './pages/FeedbackPage';
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="buses" element={<BusesPage />} />
             <Route path="schedules" element={<SchedulesPage />} />
             <Route path="feedback" element={<FeedbackPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
