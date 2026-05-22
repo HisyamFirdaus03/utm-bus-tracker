@@ -8,6 +8,7 @@ Algorithm (from SDD 5.9.2):
 4. Return ETA in minutes.
 """
 
+import logging
 from typing import Optional
 
 import requests
@@ -16,6 +17,14 @@ from django.conf import settings
 from buses.services import get_bus
 from core.firebase import get_rtdb
 from routes.services import get_stop
+
+
+logger = logging.getLogger(__name__)
+
+# Anything longer than this on a campus-scale trip is almost certainly a
+# Distance Matrix glitch (no road snap, restricted routing, quota oddity).
+# Fall back to the straight-line estimate when Google's answer exceeds it.
+_MAX_PLAUSIBLE_DURATION_SECONDS = 3600  # 1 hour
 
 
 def _get_live_location(bus_id: str) -> Optional[dict]:
@@ -77,9 +86,25 @@ def estimate_eta(bus_id: str, stop_id: str) -> Optional[dict]:
     try:
         element = data["rows"][0]["elements"][0]
         if element["status"] != "OK":
+            logger.warning(
+                "Distance Matrix element non-OK for bus %s → stop %s: %s "
+                "(top-level status=%s, error=%s)",
+                bus_id, stop_id, element.get("status"),
+                data.get("status"), data.get("error_message"),
+            )
             return _fallback_estimate(bus, stop)
         duration_seconds = element["duration"]["value"]
         distance_meters = element["distance"]["value"]
+        if duration_seconds > _MAX_PLAUSIBLE_DURATION_SECONDS:
+            # Google occasionally returns absurd durations when one of the
+            # points doesn't snap cleanly to a road (e.g. mid-field stop
+            # placements). Trust haversine instead.
+            logger.warning(
+                "Distance Matrix returned implausible duration %ss for bus %s → stop %s "
+                "(distance %sm); using fallback.",
+                duration_seconds, bus_id, stop_id, distance_meters,
+            )
+            return _fallback_estimate(bus, stop)
         return {
             "eta_minutes": round(duration_seconds / 60),
             "distance_meters": distance_meters,

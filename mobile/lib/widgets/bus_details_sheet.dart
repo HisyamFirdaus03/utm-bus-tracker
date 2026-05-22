@@ -29,7 +29,7 @@ class _BusDetailsSheetState extends ConsumerState<BusDetailsSheet> {
     super.initState();
     final route = widget.route;
     if (route == null) return;
-    _selectedStopId = closestStop(widget.bus, route)?.id;
+    _selectedStopId = nextStopOnRoute(widget.bus, route)?.id;
     if (_selectedStopId == null) return;
     _refreshTimer = Timer.periodic(_refreshInterval, (_) {
       if (!mounted || _selectedStopId == null) return;

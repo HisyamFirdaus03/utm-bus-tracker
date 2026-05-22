@@ -13,22 +13,26 @@ from core.firebase import get_db
 
 # ── Stop Data ─────────────────────────────────────────────────────
 
+# Coordinates are best-effort approximations of UTM Skudai building positions.
+# Spot-check on Google Maps after seeding — search each stop's name and verify
+# the marker lands in roughly the right area of campus. Adjust individual rows
+# as needed; the keys you care about are `latitude` and `longitude`.
 STOPS = [
-    # Route A stops
-    {"name": "Kolej Rahman Putra", "latitude": 1.5625, "longitude": 103.6472, "order": 1, "demand": 0},
-    {"name": "Dewan Sultan Iskandar", "latitude": 1.5607, "longitude": 103.6437, "order": 2, "demand": 0},
-    {"name": "Fakulti Komputeran", "latitude": 1.5590, "longitude": 103.6380, "order": 3, "demand": 0},
-    {"name": "Perpustakaan Sultanah Zanariah", "latitude": 1.5605, "longitude": 103.6350, "order": 4, "demand": 0},
-    {"name": "Arked Meranti", "latitude": 1.5575, "longitude": 103.6365, "order": 5, "demand": 0},
-    # Route B stops
-    {"name": "Kolej Tun Fatimah", "latitude": 1.5537, "longitude": 103.6425, "order": 1, "demand": 0},
-    {"name": "Fakulti Kejuruteraan Elektrik", "latitude": 1.5560, "longitude": 103.6390, "order": 2, "demand": 0},
-    {"name": "Fakulti Kejuruteraan Mekanikal", "latitude": 1.5572, "longitude": 103.6355, "order": 3, "demand": 0},
-    {"name": "Pusat Kesihatan UTM", "latitude": 1.5600, "longitude": 103.6410, "order": 4, "demand": 0},
-    # Route C stops
-    {"name": "Kolej Datin Seri Endon", "latitude": 1.5530, "longitude": 103.6460, "order": 1, "demand": 0},
-    {"name": "Kolej Tun Razak", "latitude": 1.5555, "longitude": 103.6445, "order": 2, "demand": 0},
-    {"name": "Main Gate UTM", "latitude": 1.5635, "longitude": 103.6480, "order": 3, "demand": 0},
+    # Route A stops — Main Campus Loop through library + faculty area
+    {"name": "Kolej Rahman Putra",            "latitude": 1.5605, "longitude": 103.6388, "order": 1, "demand": 0},
+    {"name": "Dewan Sultan Iskandar",         "latitude": 1.5595, "longitude": 103.6428, "order": 2, "demand": 0},
+    {"name": "Fakulti Komputeran",            "latitude": 1.5607, "longitude": 103.6381, "order": 3, "demand": 0},
+    {"name": "Perpustakaan Sultanah Zanariah","latitude": 1.5595, "longitude": 103.6395, "order": 4, "demand": 0},
+    {"name": "Arked Meranti",                 "latitude": 1.5582, "longitude": 103.6418, "order": 5, "demand": 0},
+    # Route B stops — KTF · Engineering loop
+    {"name": "Kolej Tun Fatimah",             "latitude": 1.5535, "longitude": 103.6420, "order": 1, "demand": 0},
+    {"name": "Fakulti Kejuruteraan Elektrik", "latitude": 1.5583, "longitude": 103.6404, "order": 2, "demand": 0},
+    {"name": "Fakulti Kejuruteraan Mekanikal","latitude": 1.5575, "longitude": 103.6395, "order": 3, "demand": 0},
+    {"name": "Pusat Kesihatan UTM",           "latitude": 1.5613, "longitude": 103.6430, "order": 4, "demand": 0},
+    # Route C stops — Residential loop to Main Gate
+    {"name": "Kolej Datin Seri Endon",        "latitude": 1.566794, "longitude": 103.626968, "order": 1, "demand": 0},
+    {"name": "Kolej Tun Razak",               "latitude": 1.5557, "longitude": 103.6450, "order": 2, "demand": 0},
+    {"name": "Main Gate UTM",                 "latitude": 1.5645, "longitude": 103.6363, "order": 3, "demand": 0},
 ]
 
 # Routes reference stops by name — resolved to IDs at seed time

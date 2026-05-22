@@ -23,11 +23,12 @@ double haversineMeters(
 
 double _toRadians(double degrees) => degrees * math.pi / 180;
 
-/// Stop on [route] closest to the bus's current position.
-/// Returns null if the bus has no live location or the route has no stops.
+/// Stop on [route] geographically closest to the bus's current position.
 ///
-/// Used as a "next stop" proxy for ETA defaults — true next-stop tracking
-/// would need visit history we don't have.
+/// Does **not** model direction of travel — a bus that has just passed a stop
+/// will still report that stop as "closest". For "where is the bus heading
+/// next", use [nextStopOnRoute] instead. Kept around for cases that genuinely
+/// want geographic proximity (e.g., picking the user's nearest stop).
 BusStop? closestStop(Bus bus, BusRoute route) {
   if (bus.latitude == null || bus.longitude == null) return null;
   if (route.stops.isEmpty) return null;
@@ -47,4 +48,89 @@ BusStop? closestStop(Bus bus, BusRoute route) {
     }
   }
   return best;
+}
+
+/// Stop on [route] the bus is currently heading **toward**, based on
+/// projecting the bus's position onto the route's stop polyline and
+/// returning the end-stop of the segment the bus is on.
+///
+/// Why this beats [closestStop]:
+/// - A bus sitting at stop N has "closest" = N, but is heading to N+1.
+/// - A bus past every stop on a non-circular route still reports the
+///   geographically nearest one as next (best we can do without history).
+/// - For circular routes (first ≈ last stop within 300m) the wrap segment
+///   is included, so a bus past the last stop heads back to the first.
+///
+/// Implementation: flat-Earth projection in a local-meters frame centred on
+/// the bus. For each consecutive (stop_i, stop_{i+1}) segment, project the
+/// bus and pick the segment with the smallest perpendicular distance. On a
+/// tie (bus exactly at a stop), prefer the segment that **starts** there —
+/// the bus is leaving toward the next stop, not arriving at the current one.
+BusStop? nextStopOnRoute(Bus bus, BusRoute route) {
+  if (bus.latitude == null || bus.longitude == null) return null;
+  if (route.stops.isEmpty) return null;
+
+  final ordered = [...route.stops]..sort((a, b) => a.order.compareTo(b.order));
+  if (ordered.length == 1) return ordered.first;
+
+  // Local-meters frame centred on the bus. Flat-Earth is fine for campus
+  // scale (UTM Skudai is < 3 km across).
+  final originLat = bus.latitude!;
+  final originLng = bus.longitude!;
+  const metersPerDegLat = 111320.0;
+  final metersPerDegLng = 111320.0 * math.cos(_toRadians(originLat));
+
+  double xFor(double lng) => (lng - originLng) * metersPerDegLng;
+  double yFor(double lat) => (lat - originLat) * metersPerDegLat;
+
+  // Treat the route as circular if its endpoints meet — otherwise a bus
+  // past the last stop would have no "ahead" segment to project onto.
+  final isCircular = haversineMeters(
+        ordered.first.latitude,
+        ordered.first.longitude,
+        ordered.last.latitude,
+        ordered.last.longitude,
+      ) <
+      300; // 300 m heuristic
+
+  // Segments as (startIndex, endIndex) pairs in `ordered`.
+  final segments = <List<int>>[
+    for (var i = 0; i < ordered.length - 1; i++) [i, i + 1],
+    if (isCircular) [ordered.length - 1, 0],
+  ];
+
+  double bestDist = double.infinity;
+  double bestT = double.infinity;
+  int bestEndIdx = 0;
+  const tieEpsilonMeters = 1.0;
+
+  for (final seg in segments) {
+    final start = ordered[seg[0]];
+    final end = ordered[seg[1]];
+    final ax = xFor(start.longitude);
+    final ay = yFor(start.latitude);
+    final bx = xFor(end.longitude);
+    final by = yFor(end.latitude);
+    final vx = bx - ax;
+    final vy = by - ay;
+    final lenSq = vx * vx + vy * vy;
+    if (lenSq < 1e-6) continue; // skip degenerate segments
+
+    // Bus is at (0,0), so w = bus − a = −a.
+    final t = ((-ax * vx + -ay * vy) / lenSq).clamp(0.0, 1.0);
+    final projX = ax + t * vx;
+    final projY = ay + t * vy;
+    final dist = math.sqrt(projX * projX + projY * projY);
+
+    final betterByDist = dist < bestDist - tieEpsilonMeters;
+    final tieAndStartsHere =
+        (dist - bestDist).abs() <= tieEpsilonMeters && t < bestT;
+    if (betterByDist || tieAndStartsHere) {
+      bestDist = dist;
+      bestT = t;
+      bestEndIdx = seg[1];
+    }
+  }
+
+  return ordered[bestEndIdx];
 }

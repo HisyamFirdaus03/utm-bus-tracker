@@ -9,6 +9,8 @@ urlpatterns = [
     path("stops/<str:stop_id>/", views.stop_detail, name="stop-detail"),
     path("stops/<str:stop_id>/update/", views.stop_update, name="stop-update"),
     path("stops/<str:stop_id>/delete/", views.stop_delete, name="stop-delete"),
+    # Geocode proxy (must come before <str:route_id> for the same reason)
+    path("geocode/", views.geocode, name="geocode"),
     # Routes
     path("", views.route_list, name="route-list"),
     path("create/", views.route_create, name="route-create"),

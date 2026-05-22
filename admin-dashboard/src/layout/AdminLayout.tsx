@@ -18,6 +18,7 @@ import {
   Feedback as FeedbackIcon,
   Insights as InsightsIcon,
   Logout as LogoutIcon,
+  Place as StopIcon,
 } from '@mui/icons-material';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
@@ -28,6 +29,7 @@ const DRAWER_WIDTH = 220;
 const NAV = [
   { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
   { label: 'Routes', to: '/routes', icon: <RouteIcon /> },
+  { label: 'Stops', to: '/stops', icon: <StopIcon /> },
   { label: 'Buses', to: '/buses', icon: <BusIcon /> },
   { label: 'Schedules', to: '/schedules', icon: <ScheduleIcon /> },
   { label: 'Feedback', to: '/feedback', icon: <FeedbackIcon /> },

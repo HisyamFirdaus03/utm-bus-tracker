@@ -63,7 +63,7 @@ class _BusCardState extends ConsumerState<BusCard>
     );
     final routeColor = colorForRoute(route);
 
-    final stop = route != null ? closestStop(bus, route) : null;
+    final stop = route != null ? nextStopOnRoute(bus, route) : null;
     final etaAsync = stop != null
         ? ref.watch(busEtaProvider((busId: bus.id, stopId: stop.id)))
         : const AsyncValue<int?>.data(null);
@@ -73,9 +73,7 @@ class _BusCardState extends ConsumerState<BusCard>
             .watch(watchlistProvider)
             .contains(WatchEntry(busId: bus.id, stopId: stop.id));
 
-    // Mock occupancy (not in model yet). Falls within design occupancy color logic.
-    final occupancy = (bus.id.hashCode % 100) / 100.0;
-    final statusLabel = bus.status == BusStatus.active ? 'On time' : bus.status.name;
+    final isActive = bus.status == BusStatus.active;
 
     return GestureDetector(
       onTapDown: (_) => _pressAnim.reverse(),
@@ -132,8 +130,9 @@ class _BusCardState extends ConsumerState<BusCard>
                     const SizedBox(height: 10),
                     _StatusFooter(
                       pulse: _dotPulse,
-                      occupancy: occupancy,
-                      statusLabel: statusLabel,
+                      isActive: isActive,
+                      lastUpdated: bus.lastUpdated,
+                      statusName: bus.status.name,
                     ),
                   ],
                 ),
@@ -265,19 +264,21 @@ class _EtaChip extends StatelessWidget {
 
 class _StatusFooter extends StatelessWidget {
   final Animation<double> pulse;
-  final double occupancy;
-  final String statusLabel;
+  final bool isActive;
+  final DateTime? lastUpdated;
+  final String statusName;
 
   const _StatusFooter({
     required this.pulse,
-    required this.occupancy,
-    required this.statusLabel,
+    required this.isActive,
+    required this.lastUpdated,
+    required this.statusName,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = AppTheme.occupancyColor(occupancy);
-    final percent = (occupancy * 100).round();
+    final color = isActive ? AppTheme.routeA : AppTheme.ink400;
+    final label = _label();
     return Row(
       children: [
         FadeTransition(
@@ -294,7 +295,7 @@ class _StatusFooter extends StatelessWidget {
         const SizedBox(width: 6),
         Flexible(
           child: Text(
-            '$statusLabel · $percent% full',
+            label,
             overflow: TextOverflow.ellipsis,
             style: AppTheme.label(
               size: 10.5,
@@ -305,5 +306,14 @@ class _StatusFooter extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _label() {
+    if (!isActive) return statusName;
+    if (lastUpdated == null) return 'Live';
+    final delta = DateTime.now().difference(lastUpdated!);
+    if (delta.inSeconds < 60) return 'Live · ${delta.inSeconds}s ago';
+    if (delta.inMinutes < 60) return 'Live · ${delta.inMinutes}m ago';
+    return 'Live · ${delta.inHours}h ago';
   }
 }

@@ -26,7 +26,7 @@ class BusRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final routeColor = colorForRoute(route);
-    final stop = route != null ? closestStop(bus, route!) : null;
+    final stop = route != null ? nextStopOnRoute(bus, route!) : null;
     final etaAsync = stop != null
         ? ref.watch(busEtaProvider((busId: bus.id, stopId: stop.id)))
         : const AsyncValue<int?>.data(null);
@@ -40,11 +40,8 @@ class BusRow extends ConsumerWidget {
       ..sort((a, b) => a.order.compareTo(b.order));
     final nextStops = orderedStops.take(3).toList();
 
-    final occupancy = (bus.id.hashCode % 100) / 100.0;
-    final occColor = AppTheme.occupancyColor(occupancy);
-    final occPct = (occupancy * 100).round();
-    final statusLabel = bus.status == BusStatus.active ? 'On time' : bus.status.name;
     final etaValue = etaAsync.whenOrNull(data: (e) => e);
+    final isActive = bus.status == BusStatus.active;
 
     return Material(
       color: Colors.white,
@@ -173,10 +170,10 @@ class BusRow extends ConsumerWidget {
                       _NextStopsLine(stops: nextStops),
                     ],
                     const SizedBox(height: 10),
-                    _OccupancyBar(
-                      percent: occPct,
-                      color: occColor,
-                      statusLabel: statusLabel,
+                    _StatusLine(
+                      isActive: isActive,
+                      lastUpdated: bus.lastUpdated,
+                      statusName: bus.status.name,
                     ),
                   ],
                 ),
@@ -229,48 +226,30 @@ class _NextStopsLine extends StatelessWidget {
   }
 }
 
-class _OccupancyBar extends StatelessWidget {
-  final int percent;
-  final Color color;
-  final String statusLabel;
+class _StatusLine extends StatelessWidget {
+  final bool isActive;
+  final DateTime? lastUpdated;
+  final String statusName;
 
-  const _OccupancyBar({
-    required this.percent,
-    required this.color,
-    required this.statusLabel,
+  const _StatusLine({
+    required this.isActive,
+    required this.lastUpdated,
+    required this.statusName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final dotColor = isActive ? AppTheme.routeA : AppTheme.ink400;
     return Row(
       children: [
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              height: 4,
-              child: Stack(
-                children: [
-                  Container(color: AppTheme.ink900.withValues(alpha: 0.05)),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: percent / 100),
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeOut,
-                    builder: (context, value, _) {
-                      return FractionallySizedBox(
-                        widthFactor: value.clamp(0.0, 1.0),
-                        child: Container(color: color),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Text(
-          '$percent% · $statusLabel',
+          _label(),
           style: AppTheme.label(
             size: 10.5,
             weight: FontWeight.w600,
@@ -279,5 +258,14 @@ class _OccupancyBar extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _label() {
+    if (!isActive) return statusName;
+    if (lastUpdated == null) return 'Live';
+    final delta = DateTime.now().difference(lastUpdated!);
+    if (delta.inSeconds < 60) return 'Live · ${delta.inSeconds}s ago';
+    if (delta.inMinutes < 60) return 'Live · ${delta.inMinutes}m ago';
+    return 'Live · ${delta.inHours}h ago';
   }
 }

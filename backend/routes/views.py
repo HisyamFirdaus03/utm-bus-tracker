@@ -1,3 +1,4 @@
+import requests
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -151,3 +152,69 @@ def stop_delete(request, stop_id):
             status=status.HTTP_404_NOT_FOUND,
         )
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Geocode proxy ──────────────────────────────────────────────────
+
+@api_view(["GET"])
+def geocode(request):
+    """
+    GET /api/routes/geocode/?q=NAME — admin-only best-effort geocoder.
+    Uses Nominatim (OpenStreetMap), which is free and key-less. Coverage of
+    UTM-specific buildings is partial — the admin UI falls back to a
+    "Search Google Maps" link when this returns no match.
+    """
+    if request.user.role != "admin":
+        return Response(
+            {"detail": "Admin access required."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    query = request.query_params.get("q", "").strip()
+    if not query:
+        return Response(
+            {"detail": "Query parameter 'q' is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    full_query = f"{query}, Universiti Teknologi Malaysia, Skudai, Johor, Malaysia"
+    try:
+        resp = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={
+                "q": full_query,
+                "format": "json",
+                "limit": 1,
+                "countrycodes": "my",
+            },
+            headers={"User-Agent": "utm-bustracker-admin/1.0"},
+            timeout=10,
+        )
+        results = resp.json()
+    except (requests.RequestException, ValueError) as e:
+        return Response(
+            {"detail": f"Geocoding request failed: {e}"},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    if not isinstance(results, list) or not results:
+        return Response(
+            {"detail": f"No match for '{query}'."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    top = results[0]
+    try:
+        lat = float(top["lat"])
+        lng = float(top["lon"])
+    except (KeyError, ValueError, TypeError):
+        return Response(
+            {"detail": "Unexpected geocoder response."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    return Response({
+        "lat": lat,
+        "lng": lng,
+        "formatted_address": top.get("display_name", ""),
+    })

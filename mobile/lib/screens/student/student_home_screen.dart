@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/constants.dart';
+import '../../core/geo.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/watchlist_provider.dart';
@@ -16,6 +17,8 @@ import '../../widgets/bus_card.dart';
 import '../../widgets/bus_details_sheet.dart';
 import '../../widgets/bus_row.dart';
 import '../../widgets/route_filter_chips.dart';
+
+enum BusSort { nearest, soonest, watched }
 
 class StudentHomeScreen extends ConsumerStatefulWidget {
   const StudentHomeScreen({super.key});
@@ -30,6 +33,7 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen>
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
   late final AnimationController _livePulse;
+  BusSort _sort = BusSort.nearest;
 
   // Sheet snap targets
   static const _peekSize = 0.28;
@@ -72,15 +76,17 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen>
     final activeBusesAsync = ref.watch(activeBusesStreamProvider);
     final routesAsync = ref.watch(allRoutesProvider);
     final selectedRouteId = ref.watch(selectedRouteProvider);
-    final watchlistCount = ref.watch(watchlistProvider).length;
+    final watchlist = ref.watch(watchlistProvider);
+    final watchlistCount = watchlist.length;
     // Eagerly construct the watch monitor — spins up the polling timer.
     ref.watch(watchMonitorProvider);
 
     final routes = routesAsync.valueOrNull ?? const <BusRoute>[];
     final allBuses = activeBusesAsync.valueOrNull ?? const <Bus>[];
-    final filteredBuses = selectedRouteId == null
+    final routeFiltered = selectedRouteId == null
         ? allBuses
         : allBuses.where((b) => b.routeId == selectedRouteId).toList();
+    final filteredBuses = _applySort(routeFiltered, routes, watchlist);
 
     return Scaffold(
       backgroundColor: AppTheme.paper,
@@ -151,6 +157,8 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen>
                 buses: filteredBuses,
                 routes: routes,
                 routesAsync: routesAsync,
+                sort: _sort,
+                onSortChanged: (s) => setState(() => _sort = s),
                 onToggle: _toggleSheet,
                 onBusTap: _expandAndScrollTo,
                 onStopTap: (_) {},
@@ -160,6 +168,41 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen>
         ],
       ),
     );
+  }
+
+  // ── Sort / filter ────────────────────────────────────────────────
+
+  List<Bus> _applySort(
+    List<Bus> buses,
+    List<BusRoute> routes,
+    List<WatchEntry> watchlist,
+  ) {
+    if (_sort == BusSort.watched) {
+      return buses.where((b) => watchlist.any((w) => w.busId == b.id)).toList();
+    }
+    final sorted = [...buses];
+    sorted.sort((a, b) => _sortKey(a, routes).compareTo(_sortKey(b, routes)));
+    return sorted;
+  }
+
+  double _sortKey(Bus bus, List<BusRoute> routes) {
+    if (bus.latitude == null || bus.longitude == null) return double.infinity;
+    final route = routes.where((r) => r.id == bus.routeId).firstOrNull;
+    if (route == null) return double.infinity;
+    final stop = nextStopOnRoute(bus, route);
+    if (stop == null) return double.infinity;
+    final distance = haversineMeters(
+      bus.latitude!,
+      bus.longitude!,
+      stop.latitude,
+      stop.longitude,
+    );
+    if (_sort == BusSort.nearest) return distance;
+    // Soonest: distance / speed (floor speed at walking pace so a stalled
+    // bus doesn't sort to infinity).
+    final speedKmh = ((bus.speed ?? 0).clamp(5, 60)).toDouble();
+    final speedMs = speedKmh * 1000 / 3600;
+    return distance / speedMs; // seconds
   }
 
   // ── Map ──────────────────────────────────────────────────────────
@@ -565,6 +608,8 @@ class _Sheet extends ConsumerWidget {
   final List<Bus> buses;
   final List<BusRoute> routes;
   final AsyncValue<List<BusRoute>> routesAsync;
+  final BusSort sort;
+  final ValueChanged<BusSort> onSortChanged;
   final VoidCallback onToggle;
   final ValueChanged<Bus> onBusTap;
   final ValueChanged<BusStop> onStopTap;
@@ -575,6 +620,8 @@ class _Sheet extends ConsumerWidget {
     required this.buses,
     required this.routes,
     required this.routesAsync,
+    required this.sort,
+    required this.onSortChanged,
     required this.onToggle,
     required this.onBusTap,
     required this.onStopTap,
@@ -622,7 +669,7 @@ class _Sheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _SortPills(),
+                _SortPills(current: sort, onChanged: onSortChanged),
                 const SizedBox(height: 12),
                 for (final bus in buses) ...[
                   BusRow(
@@ -638,7 +685,9 @@ class _Sheet extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
-                        'No active buses',
+                        sort == BusSort.watched
+                            ? 'No watched buses live right now'
+                            : 'No active buses',
                         style: AppTheme.label(
                           size: 13,
                           color: AppTheme.ink500,
@@ -873,15 +922,32 @@ class _HorizontalCardScroller extends StatelessWidget {
 }
 
 class _SortPills extends StatelessWidget {
+  final BusSort current;
+  final ValueChanged<BusSort> onChanged;
+
+  const _SortPills({required this.current, required this.onChanged});
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _Pill(label: 'Nearest', selected: true),
+        _Pill(
+          label: 'Nearest',
+          selected: current == BusSort.nearest,
+          onTap: () => onChanged(BusSort.nearest),
+        ),
         const SizedBox(width: 6),
-        _Pill(label: 'Soonest'),
+        _Pill(
+          label: 'Soonest',
+          selected: current == BusSort.soonest,
+          onTap: () => onChanged(BusSort.soonest),
+        ),
         const SizedBox(width: 6),
-        _Pill(label: 'Watched'),
+        _Pill(
+          label: 'Watched',
+          selected: current == BusSort.watched,
+          onTap: () => onChanged(BusSort.watched),
+        ),
       ],
     );
   }
@@ -890,22 +956,38 @@ class _SortPills extends StatelessWidget {
 class _Pill extends StatelessWidget {
   final String label;
   final bool selected;
-  const _Pill({required this.label, this.selected = false});
+  final VoidCallback onTap;
+
+  const _Pill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: selected ? AppTheme.ink900 : AppTheme.ink900.withValues(alpha: 0.05),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: AppTheme.label(
-          size: 11,
-          weight: FontWeight.w600,
-          color: selected ? Colors.white : AppTheme.ink700,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppTheme.ink900
+                : AppTheme.ink900.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: AppTheme.label(
+              size: 11,
+              weight: FontWeight.w600,
+              color: selected ? Colors.white : AppTheme.ink700,
+            ),
+          ),
         ),
       ),
     );
