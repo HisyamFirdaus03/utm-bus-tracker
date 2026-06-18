@@ -9,6 +9,7 @@ abstract class BusRepository {
     required double latitude,
     required double longitude,
     double? speed,
+    String? nextStopId,
   });
 
   /// Returns estimated time of arrival in minutes for a given bus to a given stop.

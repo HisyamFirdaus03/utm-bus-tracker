@@ -189,7 +189,7 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen>
     if (bus.latitude == null || bus.longitude == null) return double.infinity;
     final route = routes.where((r) => r.id == bus.routeId).firstOrNull;
     if (route == null) return double.infinity;
-    final stop = nextStopOnRoute(bus, route);
+    final stop = pickNextStop(bus, route);
     if (stop == null) return double.infinity;
     final distance = haversineMeters(
       bus.latitude!,
@@ -274,6 +274,8 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen>
   void _showBusDetails(Bus bus, BusRoute? route) {
     showModalBottomSheet<void>(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (_) => BusDetailsSheet(bus: bus, route: route),
     );
   }

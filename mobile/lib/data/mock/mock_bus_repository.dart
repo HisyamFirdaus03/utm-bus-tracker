@@ -70,6 +70,7 @@ class MockBusRepository implements BusRepository {
     required double latitude,
     required double longitude,
     double? speed,
+    String? nextStopId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 200));
     _buses = _buses.map((bus) {

@@ -70,6 +70,7 @@ class ApiBusRepository implements BusRepository {
           ? DateTime.fromMillisecondsSinceEpoch(ts.toInt())
           : null,
       status: BusStatus.active,
+      nextStopId: loc['next_stop_id'] as String?,
     );
   }
 
@@ -79,6 +80,7 @@ class ApiBusRepository implements BusRepository {
     required double latitude,
     required double longitude,
     double? speed,
+    String? nextStopId,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
@@ -90,6 +92,7 @@ class ApiBusRepository implements BusRepository {
       'speed': speed ?? 0,
       'timestamp': ServerValue.timestamp,
       'driver_uid': uid,
+      'next_stop_id': ?nextStopId,
     });
   }
 

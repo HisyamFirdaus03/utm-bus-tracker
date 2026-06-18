@@ -26,15 +26,16 @@ class BusRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final routeColor = colorForRoute(route);
-    final stop = route != null ? nextStopOnRoute(bus, route!) : null;
-    final etaAsync = stop != null
-        ? ref.watch(busEtaProvider((busId: bus.id, stopId: stop.id)))
+    final atStop = route != null ? arrivedStop(bus, route!) : null;
+    final nextStop = route != null ? pickNextStop(bus, route!) : null;
+    final etaAsync = (atStop == null && nextStop != null)
+        ? ref.watch(busEtaProvider((busId: bus.id, stopId: nextStop.id)))
         : const AsyncValue<int?>.data(null);
 
-    final watched = stop != null &&
+    final watched = nextStop != null &&
         ref
             .watch(watchlistProvider)
-            .contains(WatchEntry(busId: bus.id, stopId: stop.id));
+            .contains(WatchEntry(busId: bus.id, stopId: nextStop.id));
 
     final orderedStops = (route?.stops.toList() ?? [])
       ..sort((a, b) => a.order.compareTo(b.order));
@@ -130,34 +131,73 @@ class BusRow extends ConsumerWidget {
                                       style: AppTheme.plate(size: 14),
                                     ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: routeColor,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      etaValue != null ? '${etaValue}m' : '—',
-                                      style: AppTheme.label(
-                                        size: 11,
-                                        weight: FontWeight.w800,
-                                        color: Colors.white,
+                                  if (atStop != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.routeA,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.check,
+                                              size: 11, color: Colors.white),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            'Arrived',
+                                            style: AppTheme.label(
+                                              size: 11,
+                                              weight: FontWeight.w800,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      stop != null ? 'to ${stop.name}' : '',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppTheme.label(
-                                        size: 11,
-                                        weight: FontWeight.w500,
-                                        color: AppTheme.ink500,
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        'at ${atStop.name}',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTheme.label(
+                                          size: 11,
+                                          weight: FontWeight.w500,
+                                          color: AppTheme.ink500,
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ] else ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: routeColor,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        etaValue != null ? '${etaValue}m' : '—',
+                                        style: AppTheme.label(
+                                          size: 11,
+                                          weight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        nextStop != null ? 'to ${nextStop.name}' : '',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTheme.label(
+                                          size: 11,
+                                          weight: FontWeight.w500,
+                                          color: AppTheme.ink500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ],

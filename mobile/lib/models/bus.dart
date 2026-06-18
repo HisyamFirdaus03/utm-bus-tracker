@@ -10,6 +10,10 @@ class Bus {
   final double? longitude;
   final double? speed;
   final DateTime? lastUpdated;
+  // Driver-declared "next stop I'm heading to", set in RTDB by the driver
+  // app. When present and valid, student-side code prefers this over the
+  // GPS-inferred next stop. See backend/DESIGN_CHANGES.md §7.
+  final String? nextStopId;
 
   const Bus({
     required this.id,
@@ -21,6 +25,7 @@ class Bus {
     this.longitude,
     this.speed,
     this.lastUpdated,
+    this.nextStopId,
   });
 
   factory Bus.fromJson(Map<String, dynamic> json) {
@@ -49,6 +54,7 @@ class Bus {
         'longitude': longitude,
         'speed': speed,
         'last_updated': lastUpdated?.toIso8601String(),
+        'next_stop_id': nextStopId,
       };
 
   Bus copyWith({
@@ -57,6 +63,7 @@ class Bus {
     double? speed,
     BusStatus? status,
     DateTime? lastUpdated,
+    String? nextStopId,
   }) {
     return Bus(
       id: id,
@@ -68,6 +75,7 @@ class Bus {
       longitude: longitude ?? this.longitude,
       speed: speed ?? this.speed,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      nextStopId: nextStopId ?? this.nextStopId,
     );
   }
 }

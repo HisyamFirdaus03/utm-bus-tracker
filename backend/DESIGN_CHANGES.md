@@ -53,3 +53,11 @@ Views (HTTP) → Serializers (validation) → Services (business logic) → Fire
 **Implementation**: Added `description`, `color` (hex string for map polyline), and `is_active` fields to match the Flutter `BusRoute` model.
 
 **Reason**: `color` is needed for the map UI to distinguish routes visually. `description` provides user-facing route info. `is_active` supports soft-disable of routes without deletion.
+
+## 7. Hybrid Driver-Input + GPS Validation for Next-Stop Tracking
+
+**SDD**: Next-stop and ETA inferred entirely from the bus's GPS position (closest-stop heuristic).
+
+**Implementation**: The driver app picks the **next stop** before starting location sharing, then writes that ID to RTDB on every heartbeat alongside the GPS coordinates (`/bus_locations/{busId}/next_stop_id`). The driver app auto-advances the next stop when the bus crosses the geofence (≤60 m haversine) of its current declared next stop, using the route's `order` field to pick the successor (wrapping for circular routes). Student-side code calls `pickNextStop(bus, route)` which prefers the driver-declared `next_stop_id` when present and valid, falling back to the existing `nextStopOnRoute()` polyline projection when absent (e.g., legacy heartbeats, simulator runs without `--next-stop`). The RTDB security rules added `next_stop_id` as an allowed string field on `/bus_locations/{busId}`.
+
+**Reason**: Pure GPS inference produced visible bugs — "to KTR" when the bus was parked at KDSE, 27247-minute "ETAs" when projection picked the wrong segment on circular routes, fragile arrival detection. Real-world AVL systems combine driver input with GPS validation for exactly this reason: drivers know their own headsign with certainty, GPS confirms they're roughly where they say they are, and the system stays correct even when projection edge cases would otherwise fail. The fallback to `nextStopOnRoute` keeps the system functional for older drivers (or the `simulate_driver` command), so existing data paths don't break. `simulate_driver` was updated with a `--next-stop` flag and defaults to writing the successor in route order so the test path matches the production shape.

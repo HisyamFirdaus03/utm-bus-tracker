@@ -23,6 +23,69 @@ double haversineMeters(
 
 double _toRadians(double degrees) => degrees * math.pi / 180;
 
+/// A bus is considered "arrived" when within this many meters of a stop.
+/// Sized to a typical bus-stop pull-up area — generous enough that GPS
+/// jitter doesn't bounce the UI between "approaching" and "arrived".
+const arrivedThresholdMeters = 60.0;
+
+/// True when [bus] is currently parked at [stop] (within
+/// [arrivedThresholdMeters]). Returns false when the bus has no live
+/// location.
+bool isArrivedAtStop(Bus bus, BusStop stop) {
+  if (bus.latitude == null || bus.longitude == null) return false;
+  return haversineMeters(
+        bus.latitude!,
+        bus.longitude!,
+        stop.latitude,
+        stop.longitude,
+      ) <=
+      arrivedThresholdMeters;
+}
+
+/// If the bus has arrived at a stop on [route], returns that stop.
+/// Otherwise returns null (the bus is en route).
+BusStop? arrivedStop(Bus bus, BusRoute route) {
+  final closest = closestStop(bus, route);
+  if (closest == null) return null;
+  return isArrivedAtStop(bus, closest) ? closest : null;
+}
+
+/// Picks the stop the bus is heading to, with driver-input taking priority
+/// over GPS-only inference. If the driver has declared a `nextStopId` (set
+/// in RTDB by the driver app), and that stop is on [route], we trust it.
+/// Otherwise we fall back to [nextStopOnRoute] for the GPS-only guess.
+///
+/// See backend/DESIGN_CHANGES.md §7 for the rationale.
+BusStop? pickNextStop(Bus bus, BusRoute route) {
+  final declared = bus.nextStopId;
+  if (declared != null) {
+    final match = route.stops.where((s) => s.id == declared).firstOrNull;
+    if (match != null) return match;
+  }
+  return nextStopOnRoute(bus, route);
+}
+
+/// Returns the next stop in route order after [current]. For circular
+/// routes (first ≈ last within 300m), wraps from the last stop to the
+/// first. Returns null when [current] is the last stop of a non-circular
+/// route. Used by the driver app's auto-advance.
+BusStop? advanceStop(BusStop current, BusRoute route) {
+  if (route.stops.isEmpty) return null;
+  final ordered = [...route.stops]..sort((a, b) => a.order.compareTo(b.order));
+  final idx = ordered.indexWhere((s) => s.id == current.id);
+  if (idx < 0) return null;
+  if (idx < ordered.length - 1) return ordered[idx + 1];
+  // Last stop — wrap if the route is roughly circular.
+  final circular = haversineMeters(
+        ordered.first.latitude,
+        ordered.first.longitude,
+        ordered.last.latitude,
+        ordered.last.longitude,
+      ) <
+      300;
+  return circular ? ordered.first : null;
+}
+
 /// Stop on [route] geographically closest to the bus's current position.
 ///
 /// Does **not** model direction of travel — a bus that has just passed a stop

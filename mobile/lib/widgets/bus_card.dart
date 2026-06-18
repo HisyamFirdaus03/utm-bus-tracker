@@ -63,15 +63,18 @@ class _BusCardState extends ConsumerState<BusCard>
     );
     final routeColor = colorForRoute(route);
 
-    final stop = route != null ? nextStopOnRoute(bus, route) : null;
-    final etaAsync = stop != null
-        ? ref.watch(busEtaProvider((busId: bus.id, stopId: stop.id)))
+    final atStop = route != null ? arrivedStop(bus, route) : null;
+    final nextStop = route != null ? pickNextStop(bus, route) : null;
+    // Show ETA to the upcoming stop. When the bus is parked at a stop, we
+    // surface "Arrived" instead and skip the ETA fetch entirely.
+    final etaAsync = (atStop == null && nextStop != null)
+        ? ref.watch(busEtaProvider((busId: bus.id, stopId: nextStop.id)))
         : const AsyncValue<int?>.data(null);
 
-    final watched = stop != null &&
+    final watched = nextStop != null &&
         ref
             .watch(watchlistProvider)
-            .contains(WatchEntry(busId: bus.id, stopId: stop.id));
+            .contains(WatchEntry(busId: bus.id, stopId: nextStop.id));
 
     final isActive = bus.status == BusStatus.active;
 
@@ -122,11 +125,14 @@ class _BusCardState extends ConsumerState<BusCard>
                       style: AppTheme.plate(size: 15),
                     ),
                     const SizedBox(height: 12),
-                    _EtaChip(
-                      routeColor: routeColor,
-                      etaAsync: etaAsync,
-                      destination: stop?.name,
-                    ),
+                    if (atStop != null)
+                      _ArrivedChip(stopName: atStop.name)
+                    else
+                      _EtaChip(
+                        routeColor: routeColor,
+                        etaAsync: etaAsync,
+                        destination: nextStop?.name,
+                      ),
                     const SizedBox(height: 10),
                     _StatusFooter(
                       pulse: _dotPulse,
@@ -248,6 +254,60 @@ class _EtaChip extends StatelessWidget {
           Expanded(
             child: Text(
               destination != null ? 'to $destination' : 'next stop',
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.label(
+                size: 11,
+                weight: FontWeight.w500,
+                color: AppTheme.ink700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArrivedChip extends StatelessWidget {
+  final String stopName;
+  const _ArrivedChip({required this.stopName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.routeA.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppTheme.routeA,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check, size: 11, color: Colors.white),
+                const SizedBox(width: 3),
+                Text(
+                  'Arrived',
+                  style: AppTheme.label(
+                    size: 11,
+                    weight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'at $stopName',
               overflow: TextOverflow.ellipsis,
               style: AppTheme.label(
                 size: 11,

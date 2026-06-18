@@ -34,6 +34,9 @@ class Command(BaseCommand):
                             help="Plate number (e.g. 'JQR 5678'). Default: first bus.")
         parser.add_argument("--stop", default=None,
                             help="Stop name. Default: first stop on the bus's route.")
+        parser.add_argument("--next-stop", default=None,
+                            help="Name of the stop the driver declares as next. "
+                                 "Default: the stop in route order after --stop.")
         parser.add_argument("--offset-meters", type=float, default=0.0,
                             help="Place the bus this many meters north of the stop.")
         parser.add_argument("--speed", type=float, default=20.0,
@@ -86,7 +89,26 @@ class Command(BaseCommand):
         latitude = float(stop["latitude"]) + offset_deg
         longitude = float(stop["longitude"])
 
-        # 4. Write to RTDB
+        # 4. Resolve `next_stop_id` — explicit if --next-stop was given,
+        # otherwise the stop that comes after `stop` in route order
+        # (wrapping for short loops).
+        if opts["next_stop"]:
+            next_stop = next((s for s in stops if s["name"] == opts["next_stop"]), None)
+            if next_stop is None:
+                names = ", ".join(s["name"] for s in stops)
+                raise CommandError(
+                    f"Stop '{opts['next_stop']}' not on this route. Options: {names}"
+                )
+        else:
+            current_idx = next(
+                (i for i, s in enumerate(stops) if s["id"] == stop["id"]), None
+            )
+            if current_idx is None or current_idx + 1 >= len(stops):
+                next_stop = stops[0]  # wrap
+            else:
+                next_stop = stops[current_idx + 1]
+
+        # 5. Write to RTDB
         ref = rtdb.reference(f"/bus_locations/{bus_id}")
         payload = {
             "latitude": latitude,
@@ -94,11 +116,13 @@ class Command(BaseCommand):
             "speed": float(opts["speed"]),
             "timestamp": int(time.time() * 1000),
             "driver_uid": "simulator",
+            "next_stop_id": next_stop["id"],
         }
         ref.set(payload)
 
         self.stdout.write(self.style.SUCCESS(
             f"Wrote {bus['plate_number']} ({bus_id}) → "
             f"near '{stop['name']}' "
-            f"({latitude:.5f}, {longitude:.5f}) at speed {opts['speed']} km/h."
+            f"({latitude:.5f}, {longitude:.5f}) at speed {opts['speed']} km/h, "
+            f"next_stop='{next_stop['name']}'."
         ))

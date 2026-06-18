@@ -10,6 +10,7 @@
         "speed": { ".validate": "newData.isNumber()" },
         "timestamp": { ".validate": "newData.isNumber()" },
         "driver_uid": { ".validate": "newData.isString()" },
+        "next_stop_id": { ".validate": "newData.isString()" },
         "$other": { ".validate": false }
       }
     }
