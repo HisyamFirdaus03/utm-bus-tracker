@@ -1,7 +1,11 @@
+from datetime import datetime
+
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from analytics import report as report_builder
 from analytics import services
 
 
@@ -55,3 +59,17 @@ def feedback_daily(request):
         return deny
     days = int(request.query_params.get("days", 30))
     return Response(services.feedback_daily(days))
+
+
+@api_view(["GET"])
+def report(request):
+    """UC09 — Generate Report. Returns a PDF of the analytics dashboard."""
+    deny = _admin_required(request)
+    if deny:
+        return deny
+    days = int(request.query_params.get("days", 30))
+    pdf_bytes = report_builder.build_report(days=days)
+    filename = f"utm-bustracker-report-{datetime.now().strftime('%Y%m%d-%H%M')}.pdf"
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response

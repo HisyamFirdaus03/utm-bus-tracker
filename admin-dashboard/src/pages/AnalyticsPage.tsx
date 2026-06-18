@@ -2,16 +2,19 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   CircularProgress,
   Grid,
+  Snackbar,
   Stack,
   Typography,
 } from '@mui/material';
 import {
   AltRoute as RouteIcon,
   DirectionsBus as BusIcon,
+  Download as DownloadIcon,
   Feedback as FeedbackIcon,
   PeopleAlt as PeopleIcon,
 } from '@mui/icons-material';
@@ -19,6 +22,7 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
 
 import {
+  downloadReport,
   getDemandByStop,
   getFeedbackDaily,
   getOverview,
@@ -48,6 +52,20 @@ function shortDate(iso: string): string {
 export function AnalyticsPage() {
   const [data, setData] = useState<Bundle | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  async function handleExport() {
+    setDownloading(true);
+    try {
+      await downloadReport(30);
+      setToast('Report downloaded');
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : 'Failed to download report');
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -104,9 +122,20 @@ export function AnalyticsPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5" sx={{ fontWeight: 600 }}>
-        Analytics
-      </Typography>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+          Analytics
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={downloading ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <DownloadIcon />}
+          disabled={downloading}
+          onClick={handleExport}
+        >
+          {downloading ? 'Generating…' : 'Export PDF'}
+        </Button>
+      </Stack>
 
       <Grid container spacing={2}>
         {tiles.map((t) => (
@@ -261,6 +290,14 @@ export function AnalyticsPage() {
           </Card>
         </Grid>
       </Grid>
+
+      <Snackbar
+        open={toast !== null}
+        autoHideDuration={3500}
+        onClose={() => setToast(null)}
+        message={toast ?? ''}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Stack>
   );
 }

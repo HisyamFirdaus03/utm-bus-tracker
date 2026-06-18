@@ -47,3 +47,18 @@ export async function getFeedbackDaily(days = 30): Promise<FeedbackPoint[]> {
   );
   return data;
 }
+
+export async function downloadReport(days = 30): Promise<void> {
+  const { data } = await apiClient.get<Blob>(`/api/analytics/report/?days=${days}`, {
+    responseType: 'blob',
+  });
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  a.download = `utm-bustracker-report-${stamp}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
