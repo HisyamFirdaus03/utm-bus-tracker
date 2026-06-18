@@ -13,11 +13,13 @@ import {
 } from '@mui/material';
 import {
   AltRoute as RouteIcon,
+  AutoFixHigh as OptimizeIcon,
   DirectionsBus as BusIcon,
   Download as DownloadIcon,
   Feedback as FeedbackIcon,
   PeopleAlt as PeopleIcon,
 } from '@mui/icons-material';
+import { OptimizeDistributionDialog } from '../components/OptimizeDistributionDialog';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
 
@@ -54,6 +56,7 @@ export function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [optimizeOpen, setOptimizeOpen] = useState(false);
 
   async function handleExport() {
     setDownloading(true);
@@ -126,15 +129,25 @@ export function AnalyticsPage() {
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
           Analytics
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={downloading ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <DownloadIcon />}
-          disabled={downloading}
-          onClick={handleExport}
-        >
-          {downloading ? 'Generating…' : 'Export PDF'}
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<OptimizeIcon />}
+            onClick={() => setOptimizeOpen(true)}
+          >
+            Optimize Bus Distribution
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={downloading ? <CircularProgress size={16} sx={{ color: 'white' }} /> : <DownloadIcon />}
+            disabled={downloading}
+            onClick={handleExport}
+          >
+            {downloading ? 'Generating…' : 'Export PDF'}
+          </Button>
+        </Stack>
       </Stack>
 
       <Grid container spacing={2}>
@@ -297,6 +310,11 @@ export function AnalyticsPage() {
         onClose={() => setToast(null)}
         message={toast ?? ''}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
+
+      <OptimizeDistributionDialog
+        open={optimizeOpen}
+        onClose={() => setOptimizeOpen(false)}
       />
     </Stack>
   );

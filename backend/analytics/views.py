@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from analytics import demand_model
 from analytics import report as report_builder
 from analytics import services
 
@@ -59,6 +60,54 @@ def feedback_daily(request):
         return deny
     days = int(request.query_params.get("days", 30))
     return Response(services.feedback_daily(days))
+
+
+@api_view(["GET"])
+def predict_demand(request):
+    """UC07 — Optimize Bus Distribution.
+
+    Query params:
+        date    YYYY-MM-DD (default: today)
+        hour    0..23     (default: current hour)
+        weather clear|cloudy|rain (default: clear)
+    """
+    deny = _admin_required(request)
+    if deny:
+        return deny
+
+    date_raw = request.query_params.get("date")
+    try:
+        date = datetime.strptime(date_raw, "%Y-%m-%d") if date_raw else datetime.now()
+    except ValueError:
+        return Response(
+            {"detail": "Invalid `date`. Expected YYYY-MM-DD."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    hour_raw = request.query_params.get("hour")
+    try:
+        hour = int(hour_raw) if hour_raw is not None else datetime.now().hour
+    except ValueError:
+        return Response(
+            {"detail": "Invalid `hour`. Expected integer 0..23."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not 0 <= hour <= 23:
+        return Response(
+            {"detail": "`hour` must be between 0 and 23."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    weather = request.query_params.get("weather", "clear")
+    return Response(demand_model.predict_demand(date=date, hour=hour, weather=weather))
+
+
+@api_view(["GET"])
+def demand_model_status(request):
+    deny = _admin_required(request)
+    if deny:
+        return deny
+    return Response(demand_model.model_status())
 
 
 @api_view(["GET"])

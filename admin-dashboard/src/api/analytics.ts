@@ -48,6 +48,33 @@ export async function getFeedbackDaily(days = 30): Promise<FeedbackPoint[]> {
   return data;
 }
 
+export type DemandPrediction = {
+  stop_id: string;
+  stop_name: string;
+  predicted_riders: number;
+  recommended_buses: number;
+};
+
+export type DemandResult = {
+  source: 'ml_random_forest' | 'seasonal_average_fallback';
+  model_trained: boolean;
+  model_file: string | null;
+  input: { date: string; hour: number; weekday: number; weather: string };
+  fleet_size: number;
+  predictions: DemandPrediction[];
+};
+
+export async function predictDemand(params: {
+  date: string;
+  hour: number;
+  weather: string;
+}): Promise<DemandResult> {
+  const { data } = await apiClient.get<DemandResult>('/api/analytics/demand/predict/', {
+    params,
+  });
+  return data;
+}
+
 export async function downloadReport(days = 30): Promise<void> {
   const { data } = await apiClient.get<Blob>(`/api/analytics/report/?days=${days}`, {
     responseType: 'blob',
