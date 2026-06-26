@@ -40,7 +40,7 @@ USER app
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS http://localhost:8000/api/analytics/cache/status/ || curl -fsS http://localhost:8000/ || exit 1
+    CMD curl -fsS http://localhost:8000/healthz/ || exit 1
 
 # Two workers fit comfortably in 2GB. --threads=4 lets each worker handle
 # concurrent Firestore-bound I/O without spawning more processes.
