@@ -276,7 +276,7 @@ export function StopsPage() {
                           (unused)
                         </Typography>
                       ) : (
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                        <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                           {used.map((r) => (
                             <Chip
                               key={r.id}

@@ -87,7 +87,7 @@ export function OptimizeDistributionDialog({ open, onClose }: Props) {
               label="Date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+              slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
             />
             <TextField
@@ -95,7 +95,7 @@ export function OptimizeDistributionDialog({ open, onClose }: Props) {
               label="Hour (0-23)"
               value={hour}
               onChange={(e) => setHour(Math.max(0, Math.min(23, Number(e.target.value))))}
-              inputProps={{ min: 0, max: 23 }}
+              slotProps={{ htmlInput: { min: 0, max: 23 } }}
               fullWidth
             />
             <TextField
