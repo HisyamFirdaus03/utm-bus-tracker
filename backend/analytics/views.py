@@ -111,6 +111,25 @@ def demand_model_status(request):
 
 
 @api_view(["GET"])
+def cache_status(request):
+    deny = _admin_required(request)
+    if deny:
+        return deny
+    return Response(services.cache_status())
+
+
+@api_view(["POST"])
+def cache_clear(request):
+    """Drop the analytics cache so the next request re-reads Firestore.
+    Useful after running `seed_data_logs` or `train_demand_model`."""
+    deny = _admin_required(request)
+    if deny:
+        return deny
+    services.clear_cache()
+    return Response({"detail": "Cache cleared."})
+
+
+@api_view(["GET"])
 def report(request):
     """UC09 — Generate Report. Returns a PDF of the analytics dashboard."""
     deny = _admin_required(request)

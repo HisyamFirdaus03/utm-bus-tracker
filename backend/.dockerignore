@@ -1,0 +1,27 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets — these belong in Coolify env vars, NOT in the image
+.env
+.env.local
+*-service-account.json
+firebase-service-account*.json
+
+# Dev artifacts
+db.sqlite3
+*.log
+.coverage
+htmlcov/
+.idea/
+.vscode/
+DESIGN_CHANGES.md
+
+# Editor/OS junk
+.DS_Store
+*.swp

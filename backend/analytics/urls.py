@@ -11,4 +11,6 @@ urlpatterns = [
     path("demand/predict/", views.predict_demand, name="analytics-demand-predict"),
     path("demand/model-status/", views.demand_model_status, name="analytics-demand-status"),
     path("report/", views.report, name="analytics-report"),
+    path("cache/status/", views.cache_status, name="analytics-cache-status"),
+    path("cache/clear/", views.cache_clear, name="analytics-cache-clear"),
 ]
