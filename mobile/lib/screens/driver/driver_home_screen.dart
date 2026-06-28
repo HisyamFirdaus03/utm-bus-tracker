@@ -308,8 +308,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     final ordered = [...route.stops]
       ..sort((a, b) => a.order.compareTo(b.order));
     final current = ordered.where((s) => s.id == _selectedNextStopId).firstOrNull;
+    final primary = Theme.of(context).colorScheme.primary;
     return Card(
-      color: Colors.amber[50],
+      color: primary.withValues(alpha: 0.06),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -317,12 +318,12 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.flag, color: Colors.amber[800], size: 20),
+                Icon(Icons.flag, color: primary, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Next stop',
                   style: TextStyle(
-                    color: Colors.amber[900],
+                    color: primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
