@@ -299,10 +299,9 @@ export function BusesPage() {
                     <em>Unassigned</em>
                   </MenuItem>
                   {drivers.map((d) => {
-                    // Use the populated `assigned_bus` object — the backend
-                    // nulls it out when the assigned_bus_id points at a
-                    // deleted bus, so orphan references don't disable a
-                    // driver who's actually free.
+                    // `assigned_bus` is populated server-side from the
+                    // single source of truth (`bus.driver_id` per SDD
+                    // §5.5.2). No orphan-reference risk to handle here.
                     const assignedElsewhere =
                       d.assigned_bus && d.assigned_bus.id !== dialog.form.id;
                     return (

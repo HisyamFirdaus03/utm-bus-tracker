@@ -13,42 +13,19 @@ from core.firebase import get_db
 COLLECTION = "buses"
 
 
-def _sync_driver_assignment(
-    bus_id: str,
-    old_driver_id: Optional[str],
-    new_driver_id: Optional[str],
-) -> None:
-    """Keep `buses.driver_id` and `users.assigned_bus_id` in sync.
+def _detach_other_buses(bus_id: str, new_driver_id: Optional[str]) -> None:
+    """Enforce one-driver-one-bus.
 
-    When a bus's driver field changes, we must also:
-      1. Clear `assigned_bus_id` on the *previous* driver (they're no longer
-         on this bus).
-      2. If the *new* driver was already on another bus, clear that other
-         bus's `driver_id` (one driver, one bus).
-      3. Point the *new* driver's `assigned_bus_id` at this bus.
-
-    Without this, the Drivers page and the bus-assignment dropdown drift
-    out of sync with reality.
+    Per SDD §5.5.2, the driver↔bus relationship lives entirely on
+    `bus.driver_id`. If the admin assigns driver X to bus B, we must also
+    clear `driver_id` on any *other* bus that's still pointing at X.
     """
-    if (old_driver_id or None) == (new_driver_id or None):
-        return  # No-op — nothing changed.
-
+    if not new_driver_id:
+        return
     db = get_db()
-
-    if old_driver_id:
-        old_ref = db.collection("users").document(old_driver_id)
-        if old_ref.get().exists:
-            old_ref.update({"assigned_bus_id": None})
-
-    if new_driver_id:
-        new_ref = db.collection("users").document(new_driver_id)
-        new_doc = new_ref.get()
-        if not new_doc.exists:
-            return  # Caller passed a bogus driver_id; bus is already updated.
-        prev_bus_id = (new_doc.to_dict() or {}).get("assigned_bus_id")
-        if prev_bus_id and prev_bus_id != bus_id:
-            db.collection("buses").document(prev_bus_id).update({"driver_id": None})
-        new_ref.update({"assigned_bus_id": bus_id})
+    for doc in db.collection(COLLECTION).where("driver_id", "==", new_driver_id).stream():
+        if doc.id != bus_id:
+            doc.reference.update({"driver_id": None})
 
 
 def get_all_buses() -> List[dict]:
@@ -78,8 +55,7 @@ def create_bus(data: dict) -> dict:
     data["last_updated"] = None
     ref.set(data)
     data["id"] = ref.id
-    if data.get("driver_id"):
-        _sync_driver_assignment(ref.id, None, data["driver_id"])
+    _detach_other_buses(ref.id, data.get("driver_id"))
     return data
 
 
@@ -89,12 +65,10 @@ def update_bus(bus_id: str, updates: dict) -> Optional[dict]:
     doc = ref.get()
     if not doc.exists:
         return None
-    current = doc.to_dict() or {}
-    old_driver_id = current.get("driver_id")
     ref.update(updates)
     if "driver_id" in updates:
-        _sync_driver_assignment(bus_id, old_driver_id, updates.get("driver_id"))
-    data = current
+        _detach_other_buses(bus_id, updates.get("driver_id"))
+    data = doc.to_dict() or {}
     data.update(updates)
     data["id"] = bus_id
     return data
@@ -124,13 +98,15 @@ def update_location(bus_id: str, latitude: float, longitude: float,
 
 
 def delete_bus(bus_id: str) -> bool:
-    """Delete a bus document. Returns True if it existed."""
+    """Delete a bus document. Returns True if it existed.
+
+    Nothing else to clean up — driver↔bus is one-sided per SDD §5.5.2,
+    so once the bus doc is gone, any other reference to it is dead by
+    construction.
+    """
     ref = get_db().collection(COLLECTION).document(bus_id)
     doc = ref.get()
     if not doc.exists:
         return False
-    driver_id = (doc.to_dict() or {}).get("driver_id")
     ref.delete()
-    if driver_id:
-        _sync_driver_assignment(bus_id, driver_id, None)
     return True

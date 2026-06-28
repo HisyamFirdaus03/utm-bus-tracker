@@ -31,7 +31,6 @@ class UserSerializer(serializers.Serializer):
     faculty = serializers.CharField(required=False, allow_null=True)
     year = serializers.IntegerField(required=False, allow_null=True)
     phone_no = serializers.CharField(required=False, allow_null=True)
-    assigned_bus_id = serializers.CharField(required=False, allow_null=True)
 
 
 class DriverCreateSerializer(serializers.Serializer):

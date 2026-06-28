@@ -6,7 +6,9 @@ export type Driver = {
   email: string;
   role: 'driver';
   phone_no?: string | null;
-  assigned_bus_id?: string | null;
+  // Source of truth is `bus.driver_id` (per SDD §5.5.2). The backend
+  // builds this `assigned_bus` field by querying the buses collection,
+  // so the admin UI never needs to know the driver's bus ID directly.
   assigned_bus?: {
     id: string;
     plate_number: string;

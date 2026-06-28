@@ -22,7 +22,6 @@ class MockData {
       name: 'Pak Razak',
       email: 'driver@utm.my',
       role: UserRole.driver,
-      assignedBusId: 'bus-1',
     ),
     AppUser(
       id: 'admin-1',

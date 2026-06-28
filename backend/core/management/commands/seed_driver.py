@@ -57,11 +57,13 @@ class Command(BaseCommand):
             "email": email,
             "role": "driver",
             "phone_no": options["phone"],
-            "assigned_bus_id": bus_id,
         }
         db.collection("users").document(user.uid).set(profile, merge=True)
         self.stdout.write(f"  Wrote users/{user.uid}")
 
+        # Per SDD §5.5.2 the driver↔bus relationship lives entirely on
+        # `bus.driver_id`. To look up a driver's bus, query buses where
+        # driver_id == uid; nothing needs to change on the user doc.
         bus_ref.update({"driver_id": user.uid})
         self.stdout.write(f"  Linked buses/{bus_id}.driver_id → {user.uid}")
 

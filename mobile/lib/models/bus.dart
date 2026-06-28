@@ -6,6 +6,10 @@ class Bus {
   final String routeId;
   final BusStatus status;
   final int capacity;
+  // The single source of truth for the driver↔bus relationship per SDD
+  // §5.5.2 and DESIGN_CHANGES.md §15. To find "this driver's bus", the
+  // mobile driver app filters this list by `driverId == myUid`.
+  final String? driverId;
   final double? latitude;
   final double? longitude;
   final double? speed;
@@ -21,6 +25,7 @@ class Bus {
     required this.routeId,
     required this.status,
     required this.capacity,
+    this.driverId,
     this.latitude,
     this.longitude,
     this.speed,
@@ -35,6 +40,7 @@ class Bus {
       routeId: json['route_id'] as String,
       status: BusStatus.values.byName(json['status'] as String),
       capacity: json['capacity'] as int,
+      driverId: json['driver_id'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       speed: (json['speed'] as num?)?.toDouble(),
@@ -50,6 +56,7 @@ class Bus {
         'route_id': routeId,
         'status': status.name,
         'capacity': capacity,
+        'driver_id': driverId,
         'latitude': latitude,
         'longitude': longitude,
         'speed': speed,
@@ -71,6 +78,7 @@ class Bus {
       routeId: routeId,
       status: status ?? this.status,
       capacity: capacity,
+      driverId: driverId,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       speed: speed ?? this.speed,

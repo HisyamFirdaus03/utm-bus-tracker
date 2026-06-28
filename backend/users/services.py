@@ -41,7 +41,9 @@ def register_user(data: dict) -> dict:
         profile["year"] = data.get("year")
     elif role == "driver":
         profile["phone_no"] = data.get("phone_no")
-        profile["assigned_bus_id"] = None
+        # Per SDD §5.5.2 the Driver entity does NOT carry the bus reference;
+        # `bus.driver_id` is the single source of truth. To find a driver's
+        # bus, query `buses` where `driver_id == uid` (see list_drivers).
 
     get_db().collection("users").document(uid).set(profile)
 
@@ -77,27 +79,30 @@ def update_user(uid: str, updates: dict) -> Optional[dict]:
 # ----------------------------------------------------------------------
 
 def list_drivers() -> list[dict]:
-    """All users with role=driver, joined with their currently assigned bus
-    (name + plate) for the admin Drivers page."""
+    """All users with role=driver, joined with their currently assigned bus.
+
+    Source of truth for the relationship is `bus.driver_id` (per SDD §5.5.2),
+    so we build a `driver_id → bus` map in one pass over the buses collection
+    instead of reading a denormalized field on the user document.
+    """
     db = get_db()
+
+    bus_by_driver: dict[str, dict] = {}
+    for doc in db.collection("buses").stream():
+        bus = doc.to_dict() or {}
+        driver_id = bus.get("driver_id")
+        if driver_id:
+            bus_by_driver[driver_id] = {
+                "id": doc.id,
+                "plate_number": bus.get("plate_number"),
+                "bus_name": bus.get("bus_name"),
+            }
+
     drivers = []
     for doc in db.collection("users").where("role", "==", "driver").stream():
         data = doc.to_dict() or {}
         data["id"] = doc.id
-        bus_id = data.get("assigned_bus_id")
-        if bus_id:
-            bus_doc = db.collection("buses").document(bus_id).get()
-            if bus_doc.exists:
-                bus = bus_doc.to_dict() or {}
-                data["assigned_bus"] = {
-                    "id": bus_id,
-                    "plate_number": bus.get("plate_number"),
-                    "bus_name": bus.get("bus_name"),
-                }
-            else:
-                data["assigned_bus"] = None
-        else:
-            data["assigned_bus"] = None
+        data["assigned_bus"] = bus_by_driver.get(doc.id)
         drivers.append(data)
     drivers.sort(key=lambda d: (d.get("name") or "").lower())
     return drivers
@@ -121,11 +126,10 @@ def create_driver(data: dict) -> dict:
         "email": data["email"],
         "role": "driver",
         "phone_no": data.get("phone_no", ""),
-        "assigned_bus_id": None,
     }
     get_db().collection("users").document(uid).set(profile)
     profile["id"] = uid
-    profile["assigned_bus"] = None
+    profile["assigned_bus"] = None  # New driver — not on any bus yet
     return profile
 
 

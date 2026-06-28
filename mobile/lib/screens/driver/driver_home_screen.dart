@@ -164,12 +164,16 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     final busesAsync = ref.watch(allBusesProvider);
     final routesAsync = ref.watch(allRoutesProvider);
 
-    final assignedBusId = user?.assignedBusId;
-    final assignedBus = assignedBusId == null
+    // Per SDD §5.5.2 the driver↔bus relationship is one-sided — query
+    // `buses` for the one whose `driver_id` matches us. No denormalized
+    // field on the user doc; this stays correct even after reassignments.
+    final myUid = user?.id;
+    final assignedBus = myUid == null
         ? null
         : busesAsync.valueOrNull
-            ?.where((b) => b.id == assignedBusId)
+            ?.where((b) => b.driverId == myUid)
             .firstOrNull;
+    final assignedBusId = assignedBus?.id;
     final assignedRoute = assignedBus == null
         ? null
         : routesAsync.valueOrNull
@@ -412,7 +416,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                   Text(
                     assignedBus != null
                         ? 'Bus: ${assignedBus.plateNumber}'
-                        : 'Bus: ${user?.assignedBusId ?? 'Not assigned'}',
+                        : 'Bus: Not assigned',
                     style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
