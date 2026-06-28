@@ -32,3 +32,18 @@ class UserSerializer(serializers.Serializer):
     year = serializers.IntegerField(required=False, allow_null=True)
     phone_no = serializers.CharField(required=False, allow_null=True)
     assigned_bus_id = serializers.CharField(required=False, allow_null=True)
+
+
+class DriverCreateSerializer(serializers.Serializer):
+    """Admin-only — provision a new driver account end-to-end."""
+    name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    password = serializers.CharField(min_length=6, write_only=True)
+    phone_no = serializers.CharField(max_length=20, required=False, allow_blank=True)
+
+
+class DriverUpdateSerializer(serializers.Serializer):
+    """Admin-only — update mutable driver fields. Email/password are not editable
+    here (use Firebase Console for those — they affect Firebase Auth state)."""
+    name = serializers.CharField(max_length=150, required=False)
+    phone_no = serializers.CharField(max_length=20, required=False, allow_blank=True)

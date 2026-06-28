@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 
 import { createBus, deleteBus, listBuses, updateBus } from '../api/buses';
+import { listDrivers, type Driver } from '../api/drivers';
 import { listRoutes } from '../api/routes';
 import type { Bus, BusRoute } from '../api/types';
 
@@ -63,17 +64,25 @@ const STATUS_COLORS: Record<Bus['status'], 'success' | 'default' | 'warning'> = 
 export function BusesPage() {
   const [buses, setBuses] = useState<Bus[] | null>(null);
   const [routes, setRoutes] = useState<BusRoute[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ mode: 'create' | 'edit'; form: FormState } | null>(null);
 
   const reload = async () => {
     try {
-      const [b, r] = await Promise.all([listBuses(), listRoutes()]);
+      const [b, r, d] = await Promise.all([listBuses(), listRoutes(), listDrivers()]);
       setBuses(b);
       setRoutes(r);
+      setDrivers(d);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     }
+  };
+
+  const driverLabel = (uid: string | null | undefined) => {
+    if (!uid) return null;
+    const d = drivers.find((x) => x.id === uid);
+    return d ? `${d.name} (${d.email})` : uid;
   };
 
   useEffect(() => {
@@ -155,7 +164,7 @@ export function BusesPage() {
                 <TableCell>Name</TableCell>
                 <TableCell>Route</TableCell>
                 <TableCell>Capacity</TableCell>
-                <TableCell>Driver UID</TableCell>
+                <TableCell>Driver</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -172,9 +181,15 @@ export function BusesPage() {
                   </TableCell>
                   <TableCell>{b.capacity}</TableCell>
                   <TableCell>
-                    <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-                      {b.driver_id ?? '—'}
-                    </Typography>
+                    {b.driver_id ? (
+                      <Typography variant="body2">
+                        {driverLabel(b.driver_id)}
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">
+                        Unassigned
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Chip label={b.status} size="small" color={STATUS_COLORS[b.status]} />
@@ -268,17 +283,35 @@ export function BusesPage() {
                   }
                 />
               </Stack>
-              <TextField
-                label="Driver UID (Firebase Auth uid)"
-                value={dialog.form.driver_id}
-                onChange={(e) =>
-                  setDialog({
-                    ...dialog,
-                    form: { ...dialog.form, driver_id: e.target.value },
-                  })
-                }
-                helperText="Leave blank to unassign"
-              />
+              <FormControl fullWidth>
+                <InputLabel>Driver</InputLabel>
+                <Select
+                  label="Driver"
+                  value={dialog.form.driver_id}
+                  onChange={(e) =>
+                    setDialog({
+                      ...dialog,
+                      form: { ...dialog.form, driver_id: e.target.value as string },
+                    })
+                  }
+                >
+                  <MenuItem value="">
+                    <em>Unassigned</em>
+                  </MenuItem>
+                  {drivers.map((d) => {
+                    const assignedElsewhere =
+                      d.assigned_bus_id && d.assigned_bus_id !== dialog.form.id;
+                    return (
+                      <MenuItem key={d.id} value={d.id} disabled={!!assignedElsewhere}>
+                        {d.name} ({d.email})
+                        {assignedElsewhere && d.assigned_bus
+                          ? ` — already on ${d.assigned_bus.plate_number}`
+                          : ''}
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>
             </Stack>
           )}
         </DialogContent>

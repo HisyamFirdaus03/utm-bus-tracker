@@ -70,3 +70,84 @@ def update_user(uid: str, updates: dict) -> Optional[dict]:
     data.update(updates)
     data["id"] = uid
     return data
+
+
+# ----------------------------------------------------------------------
+# Driver management (admin-only)
+# ----------------------------------------------------------------------
+
+def list_drivers() -> list[dict]:
+    """All users with role=driver, joined with their currently assigned bus
+    (name + plate) for the admin Drivers page."""
+    db = get_db()
+    drivers = []
+    for doc in db.collection("users").where("role", "==", "driver").stream():
+        data = doc.to_dict() or {}
+        data["id"] = doc.id
+        bus_id = data.get("assigned_bus_id")
+        if bus_id:
+            bus_doc = db.collection("buses").document(bus_id).get()
+            if bus_doc.exists:
+                bus = bus_doc.to_dict() or {}
+                data["assigned_bus"] = {
+                    "id": bus_id,
+                    "plate_number": bus.get("plate_number"),
+                    "bus_name": bus.get("bus_name"),
+                }
+            else:
+                data["assigned_bus"] = None
+        else:
+            data["assigned_bus"] = None
+        drivers.append(data)
+    drivers.sort(key=lambda d: (d.get("name") or "").lower())
+    return drivers
+
+
+def create_driver(data: dict) -> dict:
+    """Admin-side driver provisioning. Creates Firebase Auth user with
+    role=driver custom claim + writes Firestore profile. Mirrors the
+    `seed_driver` management command but without the bus link (admin picks
+    the bus separately in the Buses page)."""
+    firebase_user = firebase_auth.create_user(
+        email=data["email"],
+        password=data["password"],
+        display_name=data["name"],
+    )
+    uid = firebase_user.uid
+    firebase_auth.set_custom_user_claims(uid, {"role": "driver"})
+
+    profile = {
+        "name": data["name"],
+        "email": data["email"],
+        "role": "driver",
+        "phone_no": data.get("phone_no", ""),
+        "assigned_bus_id": None,
+    }
+    get_db().collection("users").document(uid).set(profile)
+    profile["id"] = uid
+    profile["assigned_bus"] = None
+    return profile
+
+
+def delete_driver(uid: str) -> bool:
+    """Remove a driver from Firebase Auth + Firestore, and clear any
+    bus.driver_id pointing at them. Returns False if the user doesn't exist."""
+    db = get_db()
+    user_ref = db.collection("users").document(uid)
+    if not user_ref.get().exists:
+        return False
+
+    # Detach any buses currently pointing at this driver.
+    for bus_doc in db.collection("buses").where("driver_id", "==", uid).stream():
+        bus_doc.reference.update({"driver_id": None})
+
+    user_ref.delete()
+
+    try:
+        firebase_auth.delete_user(uid)
+    except firebase_auth.UserNotFoundError:
+        # Firebase Auth already deleted (drifted state) — Firestore is now
+        # consistent, which is what matters.
+        pass
+
+    return True

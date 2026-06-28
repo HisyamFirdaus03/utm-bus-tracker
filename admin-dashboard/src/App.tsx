@@ -6,6 +6,7 @@ import { AdminLayout } from './layout/AdminLayout';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { BusesPage } from './pages/BusesPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { DriversPage } from './pages/DriversPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { LoginPage } from './pages/LoginPage';
 import { RoutesPage } from './pages/RoutesPage';
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="routes" element={<RoutesPage />} />
             <Route path="stops" element={<StopsPage />} />
             <Route path="buses" element={<BusesPage />} />
+            <Route path="drivers" element={<DriversPage />} />
             <Route path="schedules" element={<SchedulesPage />} />
             <Route path="feedback" element={<FeedbackPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
