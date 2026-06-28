@@ -7,7 +7,9 @@ Update the SDD document to reflect these changes after development is complete.
 
 **SDD**: User → Student/Driver/Admin as separate entities with inheritance (3 sub-tables).
 
-**Implementation**: Single `User` document with a `role` field (student/driver/admin) and optional role-specific fields (`matric_number`, `faculty`, `year` for students; `phone_no` for drivers).
+**Implementation**: Single `User` document with a `role` field (student/driver/admin) and optional role-specific fields (`matric_number` for students; `phone_no` for drivers).
+
+The SDD's Student entity also lists `faculty` and `year`. Those fields were dropped from the implementation: the mobile register screen doesn't collect them, no feature reads them, and they were always written as `None`. Data minimisation — don't collect fields with no consumer. Easy to re-add to `RegisterSerializer` + `register_user` if a future feature needs them (e.g. faculty-level ridership analytics).
 
 **Reason**: Matches the Flutter `AppUser` model already built. Simpler for Firestore (NoSQL — no joins). Avoids multi-collection lookups on every auth check.
 

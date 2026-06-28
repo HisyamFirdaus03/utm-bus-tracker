@@ -51,7 +51,7 @@ def me(request):
 @api_view(["PATCH"])
 def update_profile(request):
     """PATCH /api/auth/me — update the authenticated user's profile."""
-    allowed_fields = {"name", "phone_no", "faculty", "year", "matric_number"}
+    allowed_fields = {"name", "phone_no", "matric_number"}
     updates = {k: v for k, v in request.data.items() if k in allowed_fields}
     if not updates:
         return Response(

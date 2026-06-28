@@ -37,8 +37,6 @@ def register_user(data: dict) -> dict:
 
     if role == "student":
         profile["matric_number"] = data.get("matric_number")
-        profile["faculty"] = data.get("faculty")
-        profile["year"] = data.get("year")
     elif role == "driver":
         profile["phone_no"] = data.get("phone_no")
         # Per SDD §5.5.2 the Driver entity does NOT carry the bus reference;
