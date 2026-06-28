@@ -299,13 +299,17 @@ export function BusesPage() {
                     <em>Unassigned</em>
                   </MenuItem>
                   {drivers.map((d) => {
+                    // Use the populated `assigned_bus` object — the backend
+                    // nulls it out when the assigned_bus_id points at a
+                    // deleted bus, so orphan references don't disable a
+                    // driver who's actually free.
                     const assignedElsewhere =
-                      d.assigned_bus_id && d.assigned_bus_id !== dialog.form.id;
+                      d.assigned_bus && d.assigned_bus.id !== dialog.form.id;
                     return (
                       <MenuItem key={d.id} value={d.id} disabled={!!assignedElsewhere}>
                         {d.name} ({d.email})
-                        {assignedElsewhere && d.assigned_bus
-                          ? ` — already on ${d.assigned_bus.plate_number}`
+                        {assignedElsewhere
+                          ? ` — already on ${d.assigned_bus!.plate_number}`
                           : ''}
                       </MenuItem>
                     );
