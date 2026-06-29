@@ -10,11 +10,12 @@ For PSM 2 the collection is populated by `seed_data_logs`.
 
 Caching: every public function on this module is a tiny dict lookup once
 the per-collection snapshots are warm. The snapshots are cached in
-process memory with a 5-minute TTL — opening the dashboard 100 times in
-5 minutes triggers a single Firestore scan. This is what keeps the
-project viable on Firebase Spark (50K reads/day) under demo load. Cache
-is per-process so it resets whenever Django reloads; for a multi-worker
-gunicorn deploy each worker has its own cache, which is fine.
+process memory with a 6-hour TTL — opening the dashboard or analytics
+page any number of times triggers a single Firestore scan per window.
+The data is static synthetic seed data, so the long TTL is safe and is
+what keeps the project viable on Firebase Spark (50K reads/day) now that
+the Dashboard landing page also charts ridership. Cache is per-process so
+it resets whenever Django reloads (dev) or per worker (gunicorn).
 
 Call `clear_cache()` (or `POST /api/analytics/cache/clear/`) after
 seeding/training to see fresh data without waiting for the TTL.
@@ -34,10 +35,14 @@ BUSES = "buses"
 ROUTES = "routes"
 STOPS = "stops"
 
-# 5 min is short enough that newly seeded data shows up quickly during
-# development, long enough that even aggressive dashboard refreshes only
-# trigger a single Firestore scan per window.
-_TTL_SECONDS = 300
+# `data_logs` is static synthetic seed data (written only by
+# `seed_data_logs`), so there's no freshness concern — a long TTL keeps the
+# Spark plan (50K reads/day) safe even with the Dashboard, which is the
+# always-on landing page, charting ridership on every visit. At ~2,300 reads
+# per data_logs scan, a 6h window caps it at ~4 scans/day under continuous
+# traffic (a 5-min TTL allowed up to ~288). After re-seeding, drop the cache
+# explicitly via `clear_cache()` / `POST /api/analytics/cache/clear/`.
+_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 
 _CACHE: dict[str, tuple[float, object]] = {}
 

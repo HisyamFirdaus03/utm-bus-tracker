@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- transparent canvas; bus scaled to ~0.66 around center for Android adaptive safe zone -->
+  <g transform="translate(256 256) scale(0.9) translate(-256 -256)">
+    <rect x="118" y="116" width="276" height="248" rx="40" fill="#FFFFFF"/>
+    <rect x="186" y="100" width="140" height="34" rx="17" fill="#E8A317"/>
+    <rect x="150" y="156" width="212" height="92" rx="20" fill="#7A1525"/>
+    <rect x="250" y="156" width="12" height="92" fill="#FFFFFF"/>
+    <rect x="118" y="284" width="276" height="20" fill="#E8A317"/>
+    <circle cx="150" cy="330" r="13" fill="#E8A317"/>
+    <circle cx="362" cy="330" r="13" fill="#E8A317"/>
+    <circle cx="178" cy="372" r="40" fill="#1A1B2E"/>
+    <circle cx="178" cy="372" r="17" fill="#FFFFFF"/>
+    <circle cx="334" cy="372" r="40" fill="#1A1B2E"/>
+    <circle cx="334" cy="372" r="17" fill="#FFFFFF"/>
+  </g>
+</svg>

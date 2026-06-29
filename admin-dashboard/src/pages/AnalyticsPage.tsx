@@ -45,6 +45,8 @@ type Bundle = {
   feedbackDaily: FeedbackPoint[];
 };
 
+const CHART_HEIGHT = 300;
+
 function shortDate(iso: string): string {
   // "2026-05-22" -> "May 22"
   const d = new Date(iso + 'T00:00:00Z');
@@ -182,15 +184,15 @@ export function AnalyticsPage() {
         ))}
       </Grid>
 
-      <Grid container spacing={2}>
+      <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
                 Ridership — last 30 days
               </Typography>
               <LineChart
-                height={280}
+                height={CHART_HEIGHT}
                 xAxis={[
                   {
                     data: data.ridershipDaily.map((p) => p.date),
@@ -213,13 +215,13 @@ export function AnalyticsPage() {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
                 Peak hours (avg riders / hour)
               </Typography>
               <BarChart
-                height={280}
+                height={CHART_HEIGHT}
                 xAxis={[
                   {
                     data: data.ridershipHourly.map((p) => p.hour),
@@ -240,8 +242,8 @@ export function AnalyticsPage() {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, lg: 7 }}>
-          <Card>
+        <Grid size={{ xs: 12, lg: 8 }}>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
                 Top stops by demand — last 30 days
@@ -253,7 +255,7 @@ export function AnalyticsPage() {
                 </Typography>
               ) : (
                 <BarChart
-                  height={280}
+                  height={CHART_HEIGHT}
                   layout="horizontal"
                   yAxis={[
                     {
@@ -275,14 +277,14 @@ export function AnalyticsPage() {
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, lg: 5 }}>
-          <Card>
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
                 Feedback submissions — last 30 days
               </Typography>
               <LineChart
-                height={280}
+                height={CHART_HEIGHT}
                 xAxis={[
                   {
                     data: data.feedbackDaily.map((p) => p.date),

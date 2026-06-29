@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#A11F35"/>
+      <stop offset="1" stop-color="#7A1525"/>
+    </linearGradient>
+  </defs>
+  <!-- crimson rounded-square badge -->
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <!-- bus body -->
+  <g>
+    <rect x="118" y="116" width="276" height="248" rx="40" fill="#FFFFFF"/>
+    <!-- gold roof sign -->
+    <rect x="186" y="100" width="140" height="34" rx="17" fill="#E8A317"/>
+    <!-- windscreen / window band -->
+    <rect x="150" y="156" width="212" height="92" rx="20" fill="#7A1525"/>
+    <!-- window divider -->
+    <rect x="250" y="156" width="12" height="92" fill="#FFFFFF"/>
+    <!-- gold side stripe -->
+    <rect x="118" y="284" width="276" height="20" fill="#E8A317"/>
+    <!-- headlights -->
+    <circle cx="150" cy="330" r="13" fill="#E8A317"/>
+    <circle cx="362" cy="330" r="13" fill="#E8A317"/>
+  </g>
+  <!-- wheels -->
+  <circle cx="178" cy="372" r="40" fill="#1A1B2E"/>
+  <circle cx="178" cy="372" r="17" fill="#FFFFFF"/>
+  <circle cx="334" cy="372" r="40" fill="#1A1B2E"/>
+  <circle cx="334" cy="372" r="17" fill="#FFFFFF"/>
+</svg>

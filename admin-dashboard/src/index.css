@@ -5,7 +5,8 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  font-family: 'Poppins', 'Inter', 'Helvetica', 'Arial', sans-serif;
+  background-color: #f1f2f6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

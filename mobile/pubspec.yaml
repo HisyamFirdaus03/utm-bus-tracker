@@ -52,6 +52,18 @@ dev_dependencies:
   freezed: ^2.5.8
   json_serializable: ^6.9.4
   riverpod_generator: ^2.6.3
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
+
+# App launcher icon — UTM BusTracker bus glyph (crimson badge + gold accents).
+# Source assets live in assets/icon/. Regenerate native icons with:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/bus-icon.png"
+  adaptive_icon_background: "#8B1A2B"
+  adaptive_icon_foreground: "assets/icon/bus-foreground.png"
+  remove_alpha_ios: true

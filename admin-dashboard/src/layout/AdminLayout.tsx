@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Avatar,
   Box,
   Drawer,
   IconButton,
@@ -8,6 +9,7 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -24,8 +26,10 @@ import {
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/AuthContext';
+import { UtmLogo } from '../components/UtmLogo';
+import { tokens } from '../theme';
 
-const DRAWER_WIDTH = 220;
+const DRAWER_WIDTH = 244;
 
 const NAV = [
   { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
@@ -48,35 +52,31 @@ export function AdminLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar
         position="fixed"
-        sx={{ width: `calc(100% - ${DRAWER_WIDTH}px)`, ml: `${DRAWER_WIDTH}px` }}
+        sx={{ width: `calc(100% - ${DRAWER_WIDTH}px)`, ml: `${DRAWER_WIDTH}px`, zIndex: 1201 }}
       >
-        <Toolbar>
-          <Box
-            sx={{
-              px: 1,
-              py: 0.25,
-              mr: 1,
-              bgcolor: 'primary.main',
-              color: 'white',
-              borderRadius: 0.5,
-              fontWeight: 700,
-              fontSize: 12,
-            }}
-          >
-            UTM
+        <Toolbar sx={{ gap: 1.5 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontSize: 18 }}>
+            UTM BusTracker Admin Dashboard
+          </Typography>
+          <Box sx={{ textAlign: 'right', mr: 0.5, display: { xs: 'none', sm: 'block' } }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.2 }}>
+              {user?.email?.split('@')[0] ?? 'Admin'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Administrator
+            </Typography>
           </Box>
-          <Typography variant="h6" color="primary" sx={{ flexGrow: 1 }}>
-            BusTracker Admin
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-            {user?.email}
-          </Typography>
-          <IconButton onClick={handleLogout} aria-label="Logout">
-            <LogoutIcon />
-          </IconButton>
+          <Avatar sx={{ width: 36, height: 36, bgcolor: tokens.crimsonSoft, color: 'primary.main', fontWeight: 700 }}>
+            {(user?.email?.[0] ?? 'A').toUpperCase()}
+          </Avatar>
+          <Tooltip title="Log out">
+            <IconButton onClick={handleLogout} aria-label="Logout" sx={{ color: 'text.secondary' }}>
+              <LogoutIcon />
+            </IconButton>
+          </Tooltip>
         </Toolbar>
       </AppBar>
 
@@ -85,18 +85,14 @@ export function AdminLayout() {
         sx={{
           width: DRAWER_WIDTH,
           flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            boxSizing: 'border-box',
-          },
+          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
         }}
       >
-        <Toolbar sx={{ borderBottom: '1px solid #E0E0E0' }}>
-          <Typography variant="subtitle1" color="primary" sx={{ fontWeight: 700 }}>
-            UTM BusTracker
-          </Typography>
+        <Toolbar sx={{ px: 2.5, justifyContent: 'center' }}>
+          <UtmLogo height={42} />
         </Toolbar>
-        <List>
+
+        <List sx={{ px: 1.5, py: 1 }}>
           {NAV.map((item) => (
             <ListItemButton
               key={item.to}
@@ -104,10 +100,22 @@ export function AdminLayout() {
               to={item.to}
               end={item.to === '/'}
               sx={{
+                borderRadius: 2.5,
+                mb: 0.5,
+                px: 1.5,
+                py: 1.1,
+                color: 'text.secondary',
+                '& .MuiListItemIcon-root': { color: 'text.secondary', minWidth: 38 },
+                '& .MuiListItemText-primary': { fontWeight: 600, fontSize: 14.5 },
+                '&:hover': { bgcolor: tokens.crimsonSoft, color: 'primary.main' },
+                '&:hover .MuiListItemIcon-root': { color: 'primary.main' },
                 '&.active': {
                   bgcolor: 'primary.main',
                   color: 'white',
+                  boxShadow: '0 6px 16px rgba(139, 26, 43, 0.24)',
                   '& .MuiListItemIcon-root': { color: 'white' },
+                  '&:hover': { bgcolor: 'primary.dark', color: 'white' },
+                  '&:hover .MuiListItemIcon-root': { color: 'white' },
                 },
               }}
             >
@@ -118,7 +126,7 @@ export function AdminLayout() {
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3.5, mt: 8 }}>
         <Outlet />
       </Box>
     </Box>
