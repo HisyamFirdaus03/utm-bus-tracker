@@ -7,10 +7,13 @@ All Firestore interactions for the `buses` collection live here.
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from core import cache
 from core.firebase import get_db
 
 
 COLLECTION = "buses"
+_CACHE_NAME = "buses"
+_CACHE_TTL = 300  # 5 min — bus metadata changes rarely (admin edits only)
 
 
 def _detach_other_buses(bus_id: str, new_driver_id: Optional[str]) -> None:
@@ -28,8 +31,9 @@ def _detach_other_buses(bus_id: str, new_driver_id: Optional[str]) -> None:
             doc.reference.update({"driver_id": None})
 
 
+@cache.cached_read(_CACHE_NAME, _CACHE_TTL)
 def get_all_buses() -> List[dict]:
-    """Return all buses."""
+    """Return all buses (cached — see `core.cache`)."""
     docs = get_db().collection(COLLECTION).stream()
     result = []
     for doc in docs:
@@ -39,8 +43,9 @@ def get_all_buses() -> List[dict]:
     return result
 
 
+@cache.cached_read(_CACHE_NAME, _CACHE_TTL)
 def get_bus(bus_id: str) -> Optional[dict]:
-    """Fetch a single bus by ID."""
+    """Fetch a single bus by ID (cached)."""
     doc = get_db().collection(COLLECTION).document(bus_id).get()
     if not doc.exists:
         return None
@@ -56,6 +61,7 @@ def create_bus(data: dict) -> dict:
     ref.set(data)
     data["id"] = ref.id
     _detach_other_buses(ref.id, data.get("driver_id"))
+    cache.invalidate(_CACHE_NAME)
     return data
 
 
@@ -71,6 +77,7 @@ def update_bus(bus_id: str, updates: dict) -> Optional[dict]:
     data = doc.to_dict() or {}
     data.update(updates)
     data["id"] = bus_id
+    cache.invalidate(_CACHE_NAME)
     return data
 
 
@@ -94,6 +101,7 @@ def update_location(bus_id: str, latitude: float, longitude: float,
     data = doc.to_dict()
     data.update(updates)
     data["id"] = bus_id
+    cache.invalidate(_CACHE_NAME)
     return data
 
 
@@ -109,4 +117,5 @@ def delete_bus(bus_id: str) -> bool:
     if not doc.exists:
         return False
     ref.delete()
+    cache.invalidate(_CACHE_NAME)
     return True

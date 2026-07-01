@@ -6,15 +6,23 @@ Firestore collections: `routes`, `stops`.
 
 from typing import List, Optional
 
+from core import cache
 from core.firebase import get_db
 
 
 ROUTES_COLLECTION = "routes"
 STOPS_COLLECTION = "stops"
 
+_ROUTES_CACHE = "routes"
+_STOPS_CACHE = "stops"
+# 10 min for routes+stops — they change very rarely (admin edits only) but
+# a route/stop change should visibly propagate soon.
+_CACHE_TTL = 600
+
 
 # ── Bus Stops ──────────────────────────────────────────────────────
 
+@cache.cached_read(_STOPS_CACHE, _CACHE_TTL)
 def get_all_stops() -> List[dict]:
     docs = get_db().collection(STOPS_COLLECTION).stream()
     result = []
@@ -25,6 +33,7 @@ def get_all_stops() -> List[dict]:
     return result
 
 
+@cache.cached_read(_STOPS_CACHE, _CACHE_TTL)
 def get_stop(stop_id: str) -> Optional[dict]:
     doc = get_db().collection(STOPS_COLLECTION).document(stop_id).get()
     if not doc.exists:
@@ -38,6 +47,10 @@ def create_stop(data: dict) -> dict:
     ref = get_db().collection(STOPS_COLLECTION).document()
     ref.set(data)
     data["id"] = ref.id
+    # Routes hydrate stop objects into their `stops` field, so a stop write
+    # affects the routes cache too.
+    cache.invalidate(_STOPS_CACHE)
+    cache.invalidate(_ROUTES_CACHE)
     return data
 
 
@@ -50,6 +63,8 @@ def update_stop(stop_id: str, updates: dict) -> Optional[dict]:
     data = doc.to_dict()
     data.update(updates)
     data["id"] = stop_id
+    cache.invalidate(_STOPS_CACHE)
+    cache.invalidate(_ROUTES_CACHE)
     return data
 
 
@@ -59,6 +74,8 @@ def delete_stop(stop_id: str) -> bool:
     if not doc.exists:
         return False
     ref.delete()
+    cache.invalidate(_STOPS_CACHE)
+    cache.invalidate(_ROUTES_CACHE)
     return True
 
 
@@ -77,6 +94,7 @@ def _populate_stops(route_data: dict) -> dict:
     return route_data
 
 
+@cache.cached_read(_ROUTES_CACHE, _CACHE_TTL)
 def get_all_routes() -> List[dict]:
     docs = get_db().collection(ROUTES_COLLECTION).stream()
     result = []
@@ -88,6 +106,7 @@ def get_all_routes() -> List[dict]:
     return result
 
 
+@cache.cached_read(_ROUTES_CACHE, _CACHE_TTL)
 def get_route(route_id: str) -> Optional[dict]:
     doc = get_db().collection(ROUTES_COLLECTION).document(route_id).get()
     if not doc.exists:
@@ -103,6 +122,7 @@ def create_route(data: dict) -> dict:
     ref.set(data)
     data["id"] = ref.id
     _populate_stops(data)
+    cache.invalidate(_ROUTES_CACHE)
     return data
 
 
@@ -116,6 +136,7 @@ def update_route(route_id: str, updates: dict) -> Optional[dict]:
     data.update(updates)
     data["id"] = route_id
     _populate_stops(data)
+    cache.invalidate(_ROUTES_CACHE)
     return data
 
 
@@ -125,4 +146,5 @@ def delete_route(route_id: str) -> bool:
     if not doc.exists:
         return False
     ref.delete()
+    cache.invalidate(_ROUTES_CACHE)
     return True
