@@ -47,9 +47,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       role: UserRole.student,
-      matricNumber: _matricController.text.trim().isEmpty
-          ? null
-          : _matricController.text.trim(),
+      matricNumber: _matricController.text.trim(),
     );
 
     if (!mounted) return;
@@ -151,10 +149,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _matricController,
                   textCapitalization: TextCapitalization.characters,
                   decoration: const InputDecoration(
-                    labelText: 'Matric number (optional)',
+                    labelText: 'Matric number',
                     prefixIcon: Icon(Icons.badge_outlined),
                     border: OutlineInputBorder(),
                   ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
                 const SizedBox(height: 16),
 

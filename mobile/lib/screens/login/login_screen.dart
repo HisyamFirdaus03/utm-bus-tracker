@@ -161,55 +161,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : () => context.push('/register'),
                   child: const Text('New student? Create an account'),
                 ),
-
-                const SizedBox(height: 16),
-
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Test driver account',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      _quickFillRow('driver1@utm.my', 'driver123'),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _quickFillRow(String email, String password) {
-    return InkWell(
-      onTap: () {
-        _emailController.text = email;
-        _passwordController.text = password;
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            const Icon(Icons.person_outline, size: 16, color: Colors.grey),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '$email / $password',
-                style: TextStyle(color: Colors.grey[700], fontSize: 13),
-              ),
-            ),
-            Icon(Icons.touch_app, size: 16, color: Colors.grey[500]),
-          ],
         ),
       ),
     );

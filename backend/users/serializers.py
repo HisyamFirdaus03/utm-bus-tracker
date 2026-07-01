@@ -8,10 +8,15 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(min_length=6, write_only=True)
     role = serializers.ChoiceField(choices=ROLE_CHOICES, default="student")
-    # Student-only
-    matric_number = serializers.CharField(max_length=20, required=False)
+    # Student-only. Nullable/blank so a driver or admin register call (which
+    # doesn't send it) doesn't crash the serializer.
+    matric_number = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, allow_null=True,
+    )
     # Driver-only
-    phone_no = serializers.CharField(max_length=20, required=False)
+    phone_no = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, allow_null=True,
+    )
 
 
 class LoginSerializer(serializers.Serializer):
