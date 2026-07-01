@@ -9,12 +9,11 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<AppUser?> login(String email, String password) async {
-    try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-      return getCurrentUser();
-    } on FirebaseAuthException catch (e) {
-      throw ApiException(e.message ?? 'Login failed', statusCode: null);
-    }
+    // Don't catch FirebaseAuthException here — the UI's `friendlyAuthError`
+    // helper pattern-matches on the exception's `.code` to show messages
+    // like "Incorrect email or password" instead of a raw stack trace.
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+    return getCurrentUser();
   }
 
   @override
@@ -35,6 +34,9 @@ class FirebaseAuthRepository implements AuthRepository {
         'matric_number': matricNumber,
       },
     );
+    // Backend created the Firebase Auth user server-side via
+    // firebase-admin. Now sign the local client into that account so
+    // subsequent API calls carry the ID token.
     await _auth.signInWithEmailAndPassword(email: email, password: password);
     return AppUser.fromJson(response.data as Map<String, dynamic>);
   }

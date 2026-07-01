@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth_errors.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 
@@ -54,13 +55,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (!success) {
-      final state = ref.read(authStateProvider);
-      setState(() => _error = state.hasError
-          ? state.error.toString()
-          : 'Registration failed');
+    if (success) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: const Text('Account created. Signing you in…'),
+            backgroundColor: Colors.green[700],
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      // Router redirect will fire on the AsyncValue.data(user) state.
+      return;
     }
-    // success → router redirect handles navigation to /student
+
+    final state = ref.read(authStateProvider);
+    final msg = state.hasError
+        ? friendlyAuthError(state.error!)
+        : 'Registration failed';
+    setState(() => _error = msg);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+        ),
+      );
   }
 
   @override

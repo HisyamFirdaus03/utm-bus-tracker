@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth_errors.dart';
 import '../../providers/providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -29,7 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Enter email and password');
+      _showError('Enter both email and password');
       return;
     }
 
@@ -47,10 +48,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!success) {
       final state = ref.read(authStateProvider);
       final errMsg = state.hasError
-          ? state.error.toString()
-          : 'Invalid email or password';
-      setState(() => _error = errMsg);
+          ? friendlyAuthError(state.error!)
+          : 'Login failed';
+      _showError(errMsg);
     }
+    // On success the router redirect fires and this screen unmounts.
+  }
+
+  void _showError(String message) {
+    setState(() => _error = message);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
   }
 
   @override
