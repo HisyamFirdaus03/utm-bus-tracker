@@ -15,13 +15,34 @@ import '../screens/student/watchlist_screen.dart';
 import '../screens/student/bus_schedule_screen.dart';
 import '../screens/driver/driver_home_screen.dart';
 
+/// Bridges Riverpod's `authStateProvider` into go_router's `refreshListenable`
+/// so the router *re-evaluates* redirects on auth changes without being
+/// re-constructed. Previously the routerProvider used `ref.watch`, which
+/// returned a brand new GoRouter on every auth state change — MaterialApp.router
+/// then tore down the navigator mid-login, killing any pending SnackBar /
+/// setState from the login/register screens.
+class _AuthRefreshNotifier extends ChangeNotifier {
+  _AuthRefreshNotifier(Ref ref) {
+    // fireImmediately so the very first auth state fires a redirect check.
+    ref.listen(
+      authStateProvider,
+      (_, _) => notifyListeners(),
+      fireImmediately: true,
+    );
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  final refresh = _AuthRefreshNotifier(ref);
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/login',
+    refreshListenable: refresh,
     redirect: (context, state) {
-      final user = authState.valueOrNull;
+      // Read (not watch) — refreshListenable already tells go_router when
+      // to re-check.
+      final user = ref.read(authStateProvider).valueOrNull;
       final loc = state.matchedLocation;
       final isOnAuthPage = loc == '/login' || loc == '/register';
 
