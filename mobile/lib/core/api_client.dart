@@ -31,10 +31,7 @@ class ApiClient {
       },
       onError: (e, handler) {
         final status = e.response?.statusCode;
-        final data = e.response?.data;
-        final msg = data is Map && data['detail'] != null
-            ? data['detail'].toString()
-            : e.message ?? 'Network error';
+        final msg = _extractMessage(e, status);
         handler.reject(DioException(
           requestOptions: e.requestOptions,
           response: e.response,
@@ -55,4 +52,34 @@ class ApiClient {
   late final Dio _dio;
 
   Dio get dio => _dio;
+
+  /// Best-effort extraction of a *readable* message from a Dio error.
+  /// Skips Dio's default verbose text ("This exception was thrown because
+  /// the response has a status code…") when the response body carries no
+  /// usable field.
+  static String _extractMessage(DioException e, int? status) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final detail = data['detail'] ?? data['error'] ?? data['message'];
+      if (detail != null) return detail.toString();
+      // DRF field errors: {"email": ["already exists"]}
+      for (final entry in data.entries) {
+        final v = entry.value;
+        if (v is List && v.isNotEmpty) return '${entry.key}: ${v.first}';
+        if (v is String && v.isNotEmpty) return '${entry.key}: $v';
+      }
+    }
+    if (status != null && status >= 500) return 'Server error ($status)';
+    if (status != null && status >= 400) return 'Request failed ($status)';
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Server is slow to respond';
+      case DioExceptionType.connectionError:
+        return 'Could not reach the server';
+      default:
+        return 'Network error';
+    }
+  }
 }

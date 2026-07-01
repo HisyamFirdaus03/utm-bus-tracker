@@ -7,6 +7,7 @@ All Firestore interactions for the `users` collection live here.
 from typing import Optional
 
 from firebase_admin import auth as firebase_auth
+from rest_framework.exceptions import ValidationError
 
 from core.firebase import get_db
 
@@ -16,14 +17,28 @@ def register_user(data: dict) -> dict:
     Create a new user in Firebase Auth and store their profile in Firestore.
 
     Returns the full user document dict (including `id`).
+
+    Translates common Firebase Auth exceptions into DRF `ValidationError` so
+    the mobile app sees a proper 400 with a helpful `detail` message instead
+    of a 500 stack trace.
     """
     role = data.get("role", "student")
 
-    firebase_user = firebase_auth.create_user(
-        email=data["email"],
-        password=data["password"],
-        display_name=data["name"],
-    )
+    try:
+        firebase_user = firebase_auth.create_user(
+            email=data["email"],
+            password=data["password"],
+            display_name=data["name"],
+        )
+    except firebase_auth.EmailAlreadyExistsError:
+        raise ValidationError({
+            "detail": "That email is already registered. Try logging in instead.",
+        })
+    except ValueError as e:
+        # firebase_admin raises ValueError for bad email format / short
+        # password (messages like "Invalid email" or "Password must be at
+        # least 6 characters long").
+        raise ValidationError({"detail": str(e)})
     uid = firebase_user.uid
 
     # Custom claim lets Firebase RTDB rules gate driver writes without a Firestore lookup
@@ -39,9 +54,6 @@ def register_user(data: dict) -> dict:
         profile["matric_number"] = data.get("matric_number")
     elif role == "driver":
         profile["phone_no"] = data.get("phone_no")
-        # Per SDD §5.5.2 the Driver entity does NOT carry the bus reference;
-        # `bus.driver_id` is the single source of truth. To find a driver's
-        # bus, query `buses` where `driver_id == uid` (see list_drivers).
 
     get_db().collection("users").document(uid).set(profile)
 
